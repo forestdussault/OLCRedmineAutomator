@@ -246,7 +246,7 @@ def main():
             elif job.subject.lower() == 'diversitree':
                 logging.info('Detected DIVIERSITREE job for Redmine issue {}'.format(job.id))
                 cmd = 'python ' \
-                      '/mnt/nas/Redmine/OLCRedmineAutomator/automators/strainmash.py ' \
+                      '/mnt/nas/Redmine/OLCRedmineAutomator/automators/diversitree.py ' \
                       '--redmine_instance {redmine_pickle} ' \
                       '--issue {issue_pickle} ' \
                       '--work_dir {work_dir} ' \
