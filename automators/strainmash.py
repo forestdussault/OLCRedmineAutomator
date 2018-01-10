@@ -9,12 +9,12 @@ from biotools import mash
 
 
 @click.command()
-@click.option('--redmine_instance', default=None, help='Path to redmine_instance pickle')
-@click.option('--issue', default=None, help='Path to issue pickle')
-@click.option('--work_dir', default=None, help='Path to work_dir')
-@click.option('--description', default=None, help='Path to description pickle')
+@click.option('--redmine_instance', help='Path to pickled Redmine API instance')
+@click.option('--issue', help='Path to pickled Redmine issue')
+@click.option('--work_dir', help='Path to Redmine issue work directory')
+@click.option('--description', help='Path to pickled Redmine description')
 def strainmash_redmine(redmine_instance, issue, work_dir, description):
-    # Unpickle redmine objects
+    # Unpickle Redmine objects
     redmine_instance = pickle.load(open(redmine_instance, 'rb'))
     issue = pickle.load(open(issue, 'rb'))
     description = pickle.load(open(description, 'rb'))
@@ -100,6 +100,7 @@ def mash2pandas(outname):
     print(df)
     print('\nTop Hit: {}\nScore: {}'.format(tophit_name, tophit_score))
 
+    # Header names
     colnames = [
         'MashDistance',
         'NumMatchingHashes',
