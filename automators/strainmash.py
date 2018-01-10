@@ -2,6 +2,7 @@ import os
 import re
 import glob
 import click
+import pickle
 import pandas as pd
 from Bio import Entrez
 from biotools import mash
@@ -13,6 +14,12 @@ from biotools import mash
 @click.option('--work_dir', default=None, help='Path to work_dir')
 @click.option('--description', default=None, help='Path to description pickle')
 def strainmash_redmine(redmine_instance, issue, work_dir, description):
+    # Unpickle redmine objects
+    redmine_instance = pickle.load(open(redmine_instance, 'rb'))
+    issue = pickle.load(open(issue, 'rb'))
+    description = pickle.load(open(description, 'rb'))
+
+    # Reference path
     typestrain_db_path = '/mnt/nas/Databases/GenBank/typestrains/typestrains_sketch.msh'
 
     # Parse description to get list of SeqIDs
@@ -22,12 +29,12 @@ def strainmash_redmine(redmine_instance, issue, work_dir, description):
         item = item.upper()
         seqids.append(item)
 
-    with open('seqid.txt', 'w') as f:
+    with open(os.path.join(work_dir, 'seqid.txt'), 'w') as f:
         for seqid in seqids:
             f.write(seqid + '\n')
 
     # Drop FASTA files into workdir
-    cmd = 'python2 /mnt/nas/WGSspades/file_extractor.py seqid.txt {} /mnt/nas/'.format(work_dir)
+    cmd = 'python2 /mnt/nas/WGSspades/file_extractor.py {0}/seqid.txt {0} /mnt/nas/'.format(work_dir)
     os.system(cmd)
 
     # Create output directory
@@ -53,9 +60,8 @@ def strainmash_redmine(redmine_instance, issue, work_dir, description):
                     queryfile=item,
                     outname=output_filename)
 
-    # Upload files
+    # Upload files, set status to Feedback
     redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=3)
-
 
 
 def mash_screen(reference, queryfile, outname):
@@ -117,8 +123,11 @@ def extract_entrez_data(accession):
     """
     Entrez.email = 'forest.dussault@inspection.gc.ca'
 
-    handle = Entrez.esearch(db='assembly', term=accession)
-    record = Entrez.read(handle)
+    try:
+        handle = Entrez.esearch(db='assembly', term=accession)
+        record = Entrez.read(handle)
+    except:
+        pass
 
     for id in record['IdList']:
         # Get Assembly Summary
@@ -129,23 +138,14 @@ def extract_entrez_data(accession):
 
             # Parse Accession Name from Summary
             accession_id = esummary_record['DocumentSummarySet']['DocumentSummary'][0]['AssemblyAccession']
-        except:
-            print('Failed')
-            return None
 
-        # Search Name for ID
-        try:
-            refseq_id = Entrez.read(Entrez.esearch(db="nucleotide", term=accession_id))['IdList'][
-                0]  # Likely only one sequence match?
-        except:
-            print('Failed')
-            return None
+            # Search Name for ID
+            refseq_id = Entrez.read(Entrez.esearch(db="nucleotide", term=accession_id))['IdList'][0]
 
-        # Fetch Record with ID from nucleotide db
-        seq_record = Entrez.efetch(db="nucleotide", id=refseq_id, retmode='xml')
+            # Fetch Record with ID from nucleotide db
+            seq_record = Entrez.efetch(db="nucleotide", id=refseq_id, retmode='xml')
 
-        record = Entrez.read(seq_record)
-        try:
+            record = Entrez.read(seq_record)
             organism = record[0]['GBSeq_organism']
         except:
             print('Failed')
@@ -157,3 +157,6 @@ def extract_entrez_data(accession):
 
         print(organism)
         return organism
+
+if __name__ == '__main__':
+    strainmash_redmine()
