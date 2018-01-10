@@ -76,9 +76,9 @@ def diversitree_redmine(redmine_instance, issue, work_dir, description):
 def check_distances(ref_fasta, fasta_folder):
     bad_fastqs = list()
     # fastqs = glob.glob(os.path.join(fastq_folder, '*R1*'))
-    mash.sketch(os.path.join(fasta_folder, '*.fasta'), output_sketch='sketch.msh', threads=5)
-    mash.dist('sketch.msh', ref_fasta, threads=5)
-    mash_output = mash.read_mash_output('distances.tab')
+    mash.sketch(os.path.join(fasta_folder, '*.fasta'), output_sketch=os.path.join(fasta_folder, 'sketch.msh'), threads=56)
+    mash.dist(os.path.join(fasta_folder, 'sketch.msh'), ref_fasta, threads=56, output_file=os.path.join(fasta_folder, 'distances.tab'))
+    mash_output = mash.read_mash_output(os.path.join(fasta_folder, 'distances.tab'))
     for item in mash_output:
         print(item.reference, item.query, str(item.distance))
         if item.distance > 0.06:  # May need to adjust this value.
