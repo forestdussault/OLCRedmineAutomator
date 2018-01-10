@@ -174,7 +174,7 @@ def submit_slurm_job(redmine_instance, resource_id, issue, work_dir, cmd, cpu_co
     # Submit job to slurm
     logging.info('Submitting job {} to Slurm'.format(issue.id))
     os.system('sbatch ' + slurm_template)
-
+    logging.info('Output for {} is available in {}'.format(issue.id, work_dir))
 
 def main():
     logging.basicConfig(level=logging.DEBUG)
@@ -204,6 +204,7 @@ def main():
                                      issue=job,
                                      work_dir=work_dir,
                                      description=description)
+
 
             #############################################
             ### Plug in your new Redmine scripts here ###
