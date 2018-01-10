@@ -86,14 +86,14 @@ def pickle_redmine(redmine_instance, issue, work_dir, description):
     :param work_dir: string path to working directory for Redmine job
     :return: dictionary with paths to redmine instance, issue and description pickles
     """
-    pickled_redmine = os.path.join(work_dir,'redmine.pickle')
-    pickled_issue = os.path.join(work_dir,'issue.pickle')
-    pickled_description = os.path.join(work_dir,'description.pickle')
+    pickled_redmine = os.path.join(work_dir, 'redmine.pickle')
+    pickled_issue = os.path.join(work_dir, 'issue.pickle')
+    pickled_description = os.path.join(work_dir, 'description.pickle')
 
     # Create dictionary
-    pickles = {'redmine_instance' : pickled_redmine,
-               'issue' : pickled_issue,
-               'description' : pickled_description}
+    pickles = {'redmine_instance': pickled_redmine,
+               'issue': pickled_issue,
+               'description': pickled_description}
 
     # Write pickle files
     with open(pickled_redmine, 'wb') as file:
@@ -176,6 +176,7 @@ def submit_slurm_job(redmine_instance, resource_id, issue, work_dir, cmd, cpu_co
     os.system('sbatch ' + slurm_template)
     logging.info('Output for {} is available in {}'.format(issue.id, work_dir))
 
+
 def main():
     logging.basicConfig(level=logging.DEBUG)
     redmine = redmine_setup(API_KEY)
@@ -244,6 +245,24 @@ def main():
 
             elif job.subject.lower() == 'diversitree':
                 logging.info('Detected DIVIERSITREE job for Redmine issue {}'.format(job.id))
+                cmd = 'python ' \
+                      '/mnt/nas/Redmine/OLCRedmineAutomator/automators/strainmash.py ' \
+                      '--redmine_instance {redmine_pickle} ' \
+                      '--issue {issue_pickle} ' \
+                      '--work_dir {work_dir} ' \
+                      '--description {description_pickle}'.format(redmine_pickle=pickles['redmine_instance'],
+                                                                  issue_pickle=pickles['issue'],
+                                                                  description_pickle=pickles['description'],
+                                                                  work_dir=work_dir,)
+
+                # Submit job to slurm
+                submit_slurm_job(redmine_instance=redmine,
+                                 resource_id=job.id,
+                                 issue=job,
+                                 work_dir=work_dir,
+                                 cmd=cmd,
+                                 cpu_count=56,
+                                 memory=192000)
 
             elif job.subject.lower() == 'irida retrieve':
                 logging.info('Detected IRIDA RETRIEVE job for Redmine issue {}'.format(job.id))

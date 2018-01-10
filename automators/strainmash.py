@@ -38,7 +38,7 @@ def strainmash_redmine(redmine_instance, issue, work_dir, description):
     os.system(cmd)
 
     # Create output directory
-    os.mkdir(os.path.join(work_dir,'output'))
+    os.mkdir(os.path.join(work_dir, 'output'))
 
     # Get all of the FASTA files
     fasta_list = glob.glob(os.path.join(work_dir, '*.fasta'))
