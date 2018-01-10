@@ -168,19 +168,19 @@ def submit_slurm_job(redmine_instance, resource_id, issue, work_dir, cmd, cpu_co
     redmine_instance.issue.update(resource_id=issue.id,
                                   status_id=2,
                                   notes='Your job has been submitted to the OLC Slurm Cluster')
-    logging.info('Updated job status for {} to In Progress'.format(issue.id))
+    logging.info('{}: Updated job status for {} to In Progress'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()), issue.id))
 
     # Create shell script
     slurm_template = create_template(issue=issue, cpu_count=cpu_count, memory=memory, work_dir=work_dir, cmd=cmd)
 
     # Submit job to slurm
-    logging.info('Submitting job {} to Slurm'.format(issue.id))
+    logging.info('{}: Submitting job {} to Slurm'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()), issue.id))
     os.system('sbatch ' + slurm_template)
-    logging.info('Output for {} is available in {}'.format(issue.id, work_dir))
+    logging.info('{}: Output for {} is available in {}'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()), issue.id, work_dir))
 
 
 def main():
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
     redmine = redmine_setup(API_KEY)
 
     # Continually monitor for new jobs
@@ -214,7 +214,7 @@ def main():
             #############################################
 
             if job.subject.lower() == 'strainmash':
-                logging.info('Detected STRAINMASH job for Redmine issue {}'.format(job.id))
+                logging.info('{}: Detected STRAINMASH job for Redmine issue {}'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()), job.id))
 
                 # Prepare command to call analysis script with pickled Redmine objects
                 cmd = 'python ' \
