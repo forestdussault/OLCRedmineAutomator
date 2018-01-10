@@ -2,10 +2,8 @@ import os
 import time
 import logging
 import pickle
-import slurm_writer
 from redminelib import Redmine
 from setup import AUTOMATOR_KEYWORDS, API_KEY, BIO_REQUESTS_DIR
-from automators import strainmash
 
 
 def redmine_setup(api_key):
@@ -50,6 +48,7 @@ def bio_requests_setup(issue):
     work_dir = os.path.join(BIO_REQUESTS_DIR, str(issue.id))
     try:
         os.makedirs(work_dir)
+        logging.info('Created directory: {}'.format(work_dir))
     except OSError:
         logging.error('{} already exists'.format(work_dir))
     return work_dir
@@ -96,11 +95,75 @@ def pickle_redmine(redmine_instance, issue, work_dir, description):
                'issue' : pickled_issue,
                'description' : pickled_description}
 
-    pickle.dump(redmine_instance, open(pickled_redmine, 'rb'))
-    pickle.dump(issue, open(pickled_issue, 'rb'))
-    pickle.dump(description, open(pickled_description, 'rb'))
+    with open(pickled_redmine, 'wb') as file:
+        pickle.dump(redmine_instance, file)
+    with open(pickled_issue, 'wb') as file:
+        pickle.dump(issue, file)
+    with open(pickled_description, 'wb') as file:
+        pickle.dump(description, file)
 
     return pickles
+
+
+def make_executable(path):
+    """
+    Takes a shell script and makes it executable
+    :param path: path to shell script
+    """
+    mode = os.stat(path).st_mode
+    mode |= (mode & 0o444) >> 2
+    os.chmod(path, mode)
+
+
+def create_template(issue, cpu_count, memory, work_dir, cmd):
+    """
+    :param issue:
+    :param cpu_count:
+    :param memory:
+    :param work_dir:
+    :param cmd:
+    :return:
+    """
+    template = "#!/bin/bash\n" \
+               "#SBATCH -N 1\n" \
+               "#SBATCH --ntasks={cpu_count}\n" \
+               "#SBATCH --mem={memory}\n" \
+               "#SBATCH --time=1-00:00\n" \
+               "#SBATCH --job-name={jobid}\n" \
+               "#SBATCH -o {work_dir}/job_%j.out\n" \
+               "#SBATCH -e {work_dir}/job_%j.err\n" \
+               "source /mnt/nas/Redmine/.virtualenvs/OLCRedmineAutomator/bin/activate\n" \
+               "{cmd}".format(cpu_count=cpu_count,
+                              memory=memory,
+                              jobid=issue.id,
+                              work_dir=work_dir,
+                              cmd=cmd)
+
+    # Path to slurm shell script
+    file_path = os.path.join(BIO_REQUESTS_DIR, str(issue.id), str(issue.id) + '_slurm.sh')
+
+    # Write slurm job to shell script
+    with open(file_path, 'w+') as file:
+        file.write(template)
+
+    # chmod +x
+    make_executable(file_path)
+
+    return file_path
+
+
+def submit_slurm_job(redmine_instance, resource_id, job, work_dir, cmd, cpu_count=8, memory=12000):
+    # Set status of issue to In Progress
+    redmine_instance.issue.update(resource_id=job.id, status_id=2)
+    logging.info('Updated job status for {} to In Progress'.format(job.id))
+
+    # Create shell script
+    slurm_template = create_template(issue=job, cpu_count=cpu_count, memory=memory, work_dir=work_dir, cmd=cmd)
+
+    # Submit job to slurm
+    logging.info('Submitting job {} to Slurm'.format(job.id))
+    os.system('sbatch ' + slurm_template)
+
 
 def main():
     logging.basicConfig(level=logging.DEBUG)
@@ -108,11 +171,13 @@ def main():
 
     # Continually monitor for new jobs
     while True:
+        logging.info('{}: Scanning for new Redmine jobs...'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())))
+
+        # Grab jobs
         issues = retrieve_issues(redmine)
         new_jobs = new_automation_jobs(issues)
 
-        logging.info('{}: Scanning for new Redmine jobs...'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())))
-
+        # Queue up a slurm job for each new issue
         for job in new_jobs:
             work_dir = bio_requests_setup(job)
             issue_text_dump(job)
@@ -130,17 +195,24 @@ def main():
             if job.subject.lower() == 'strainmash_test':
                 logging.info('Detected STRAINMASH job for Redmine issue {}'.format(job.id))
 
-                slurm_template = slurm_writer.create_template(issue=job,
-                                                              cpu_count=8,
-                                                              memory=12000,
-                                                              work_dir=work_dir
-                                                              )
+                cmd = 'python ' \
+                      '/mnt/nas/Redmine/OLCRedmineAutomator/automators/strainmash.py ' \
+                      '--redmine_instance {redmine_pickle} ' \
+                      '--issue {issue_pickle} ' \
+                      '--work_dir {work_dir} ' \
+                      '--description {description_pickle}'.format(redmine_pickle=pickles['redmine_instance'],
+                                                                  issue_pickle=pickles['issue'],
+                                                                  work_dir=work_dir,
+                                                                  description_pickle=pickles['description'])
 
+                submit_slurm_job(redmine_instance=redmine,
+                                 resource_id=job.id,
+                                 job=job,
+                                 work_dir=work_dir,
+                                 cmd=cmd,
+                                 cpu_count=8,
+                                 memory=12000)
 
-                strainmash.strainmash_redmine(redmine_instance=redmine,
-                                              issue=job,
-                                              work_dir=work_dir,
-                                              description=description)
             elif job.subject == 'test2':
                 pass
             else:
