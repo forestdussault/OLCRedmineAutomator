@@ -165,7 +165,9 @@ def submit_slurm_job(redmine_instance, resource_id, issue, work_dir, cmd, cpu_co
     :param memory: memory in MB to allocate for slurm job
     """
     # Set status of issue to In Progress
-    redmine_instance.issue.update(resource_id=issue.id, status_id=2)
+    redmine_instance.issue.update(resource_id=issue.id,
+                                  status_id=2,
+                                  notes='Your job has been submitted to the OLC Slurm Cluster')
     logging.info('Updated job status for {} to In Progress'.format(issue.id))
 
     # Create shell script
