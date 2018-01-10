@@ -61,7 +61,7 @@ def strainmash_redmine(redmine_instance, issue, work_dir, description):
                     outname=output_filename)
 
     # Upload files, set status to Feedback
-    redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=3)
+    redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=4)
 
 
 def mash_screen(reference, queryfile, outname):

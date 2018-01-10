@@ -68,7 +68,7 @@ def diversitree_redmine(redmine_instance, issue, work_dir, description):
     output_dict = dict()
     output_dict['path'] = os.path.join(work_dir, 'output', 'pruned.tree')
     output_dict['filename'] = 'tree.nwk'
-    redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=3,
+    redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=4,
                                   notes='DiversiTree process complete!')
     os.system('rm {fasta_files}'.format(fasta_files=os.path.join(work_dir, '*fasta')))
 
