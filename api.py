@@ -167,7 +167,7 @@ def submit_slurm_job(redmine_instance, resource_id, issue, work_dir, cmd, cpu_co
     # Set status of issue to In Progress
     redmine_instance.issue.update(resource_id=issue.id,
                                   status_id=2,
-                                  notes='Your job has been submitted to the OLC Slurm Cluster')
+                                  notes='Your job has been submitted to the OLC Slurm cluster.')
     logging.info('Updated job status for {} to In Progress'.format(issue.id))
 
     # Create shell script
@@ -291,9 +291,9 @@ def main():
             #############################################
             #############################################
 
-        # Take a nap for 5 minutes
-        logging.info('A new scan for issues will be performed in 5 minutes'.format())
-        time.sleep(300)
+        # Take a nap for 10 minutes
+        logging.info('A new scan for issues will be performed in 10 minutes'.format())
+        time.sleep(600)
 
 
 if __name__ == '__main__':
