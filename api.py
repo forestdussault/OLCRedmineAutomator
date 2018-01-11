@@ -247,6 +247,24 @@ def main():
 
             elif job.subject.lower() == 'autoclark':
                 logging.info('Detected AUTOCLARK job for Redmine issue {}'.format(job.id))
+                cmd = 'python ' \
+                      '/mnt/nas/Redmine/OLCRedmineAutomator/automators/autoclark.py ' \
+                      '--redmine_instance {redmine_pickle} ' \
+                      '--issue {issue_pickle} ' \
+                      '--work_dir {work_dir} ' \
+                      '--description {description_pickle}'.format(redmine_pickle=pickles['redmine_instance'],
+                                                                  issue_pickle=pickles['issue'],
+                                                                  description_pickle=pickles['description'],
+                                                                  work_dir=work_dir,)
+
+                # Submit job to slurm
+                submit_slurm_job(redmine_instance=redmine,
+                                 resource_id=job.id,
+                                 issue=job,
+                                 work_dir=work_dir,
+                                 cmd=cmd,
+                                 cpu_count=48,
+                                 memory=192000)
 
             elif job.subject.lower() == 'snvphyl':
                 logging.info('Detected SNVPHYL job for Redmine issue {}'.format(job.id))
