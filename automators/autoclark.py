@@ -9,7 +9,7 @@ import pickle
 @click.option('--issue', help='Path to pickled Redmine issue')
 @click.option('--work_dir', help='Path to Redmine issue work directory')
 @click.option('--description', help='Path to pickled Redmine description')
-def clark_redminee(redmine_instance, issue, work_dir, description):
+def clark_redmine(redmine_instance, issue, work_dir, description):
     # Unpickle Redmine objects
     redmine_instance = pickle.load(open(redmine_instance, 'rb'))
     issue = pickle.load(open(issue, 'rb'))
@@ -96,3 +96,6 @@ def verify_fasta_files_present(seqid_list, fasta_dir):
         if len(glob.glob(os.path.join(fasta_dir, seqid, '*.fasta'))) == 0:
             missing_fastas.append(seqid)
     return missing_fastas
+
+if __name__ == '__main__':
+    clark_redmine()
