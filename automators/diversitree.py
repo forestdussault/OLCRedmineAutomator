@@ -23,7 +23,7 @@ def diversitree_redmine(redmine_instance, issue, work_dir, description):
         redmine_instance.issue.update(resource_id=issue.id,
                                       notes='Error! The first line of your request must be the number of'
                                             ' strains you want picked from the tree.',
-                                      status_id=3)
+                                      status_id=4)
         return
 
     # Parse description for SEQIDs, write list that file_extractor needs.
@@ -68,6 +68,7 @@ def diversitree_redmine(redmine_instance, issue, work_dir, description):
     output_dict = dict()
     output_dict['path'] = os.path.join(work_dir, 'output', 'pruned.tree')
     output_dict['filename'] = 'tree.nwk'
+    output_list.append(output_dict)
     redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=4,
                                   notes='DiversiTree process complete!')
     os.system('rm {fasta_files}'.format(fasta_files=os.path.join(work_dir, '*fasta')))
