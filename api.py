@@ -1,7 +1,7 @@
 import os
 import time
-import logging
 import pickle
+import logging
 from redminelib import Redmine
 from setup import AUTOMATOR_KEYWORDS, API_KEY, BIO_REQUESTS_DIR
 
@@ -179,6 +179,21 @@ def submit_slurm_job(redmine_instance, resource_id, issue, work_dir, cmd, cpu_co
     logging.info('Output for {} is available in {}'.format(issue.id, work_dir))
 
 
+def prepare_automation_command(automation_script, pickles, work_dir):
+    automation_script_path = os.path.join(os.path.dirname(__file__), 'automators', automation_script)
+    cmd = 'python ' \
+          '{script} ' \
+          '--redmine_instance {redmine_pickle} ' \
+          '--issue {issue_pickle} ' \
+          '--work_dir {work_dir} ' \
+          '--description {description_pickle}'.format(script=automation_script_path,
+                                                      redmine_pickle=pickles['redmine_instance'],
+                                                      issue_pickle=pickles['issue'],
+                                                      description_pickle=pickles['description'],
+                                                      work_dir=work_dir)
+    return cmd
+
+
 def main():
     # Config logger to show a timestamp
     logging.basicConfig(
@@ -223,17 +238,8 @@ def main():
                 logging.info('Detected STRAINMASH job for Redmine issue {}'.format(job.id))
 
                 # Prepare command to call analysis script with pickled Redmine objects
-                cmd = 'python ' \
-                      '/mnt/nas/Redmine/OLCRedmineAutomator/automators/strainmash.py ' \
-                      '--redmine_instance {redmine_pickle} ' \
-                      '--issue {issue_pickle} ' \
-                      '--work_dir {work_dir} ' \
-                      '--description {description_pickle}'.format(redmine_pickle=pickles['redmine_instance'],
-                                                                  issue_pickle=pickles['issue'],
-                                                                  description_pickle=pickles['description'],
-                                                                  work_dir=work_dir,)
+                cmd = prepare_automation_command(automation_script='strainmash.py', pickles=pickles, work_dir=work_dir)
 
-                # Submit job to slurm
                 submit_slurm_job(redmine_instance=redmine,
                                  resource_id=job.id,
                                  issue=job,
@@ -247,17 +253,8 @@ def main():
 
             elif job.subject.lower() == 'autoclark':
                 logging.info('Detected AUTOCLARK job for Redmine issue {}'.format(job.id))
-                cmd = 'python ' \
-                      '/mnt/nas/Redmine/OLCRedmineAutomator/automators/autoclark.py ' \
-                      '--redmine_instance {redmine_pickle} ' \
-                      '--issue {issue_pickle} ' \
-                      '--work_dir {work_dir} ' \
-                      '--description {description_pickle}'.format(redmine_pickle=pickles['redmine_instance'],
-                                                                  issue_pickle=pickles['issue'],
-                                                                  description_pickle=pickles['description'],
-                                                                  work_dir=work_dir,)
+                cmd = prepare_automation_command(automation_script='autoclark.py', pickles=pickles, work_dir=work_dir)
 
-                # Submit job to slurm
                 submit_slurm_job(redmine_instance=redmine,
                                  resource_id=job.id,
                                  issue=job,
@@ -271,17 +268,8 @@ def main():
 
             elif job.subject.lower() == 'diversitree':
                 logging.info('Detected DIVIERSITREE job for Redmine issue {}'.format(job.id))
-                cmd = 'python ' \
-                      '/mnt/nas/Redmine/OLCRedmineAutomator/automators/diversitree.py ' \
-                      '--redmine_instance {redmine_pickle} ' \
-                      '--issue {issue_pickle} ' \
-                      '--work_dir {work_dir} ' \
-                      '--description {description_pickle}'.format(redmine_pickle=pickles['redmine_instance'],
-                                                                  issue_pickle=pickles['issue'],
-                                                                  description_pickle=pickles['description'],
-                                                                  work_dir=work_dir,)
+                cmd = prepare_automation_command(automation_script='diversitree.py', pickles=pickles, work_dir=work_dir)
 
-                # Submit job to slurm
                 submit_slurm_job(redmine_instance=redmine,
                                  resource_id=job.id,
                                  issue=job,
