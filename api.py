@@ -29,13 +29,13 @@ def new_automation_jobs(issues):
     :param issues: issues object pulled from Redmine API
     :return: returns a new subset of issues that are Status: NEW and match a term in AUTOMATOR_KEYWORDS)
     """
-    new_jobs = []
+    new_jobs = {}
     for issue in issues:
         # Only new issues
         if issue.status.name == 'New': # change this to new for production
             # Check for presence of an automator keyword in subject line
             if issue.subject.lower() in AUTOMATOR_KEYWORDS:
-                new_jobs.append(issue)
+                new_jobs[issue] = issue.subject.lower()
                 logging.debug('{id}:{subject}:{status}'.format(id = issue.id, subject = issue.subject, status = issue.status))
     return new_jobs
 
@@ -156,6 +156,8 @@ def create_template(issue, cpu_count, memory, work_dir, cmd):
 
 def submit_slurm_job(redmine_instance, issue, work_dir, cmd, cpu_count=8, memory=12000):
     """
+    Wrapper for several tasks necessary to submit a SLURM job.
+    This function will update the issue, then create a shell script for SLURM, then run the shell script on the cluster.
     :param redmine_instance: instantiated Redmine API object
     :param resource_id: ID pulled from issue instance
     :param issue: object pulled from Redmine instance
@@ -180,6 +182,13 @@ def submit_slurm_job(redmine_instance, issue, work_dir, cmd, cpu_count=8, memory
 
 
 def prepare_automation_command(automation_script, pickles, work_dir):
+    """
+    Function for preparing the system call to an automation script
+    :param automation_script: name of the script you'd like to call (i.e. 'autoclark.py')
+    :param pickles: dictionary from the pickle_redmine() function
+    :param work_dir: string path to working directory for Redmine job
+    :return: string of completed command to pass to automation script
+    """
     automation_script_path = os.path.join(os.path.dirname(__file__), 'automators', automation_script)
     cmd = 'python ' \
           '{script} ' \
@@ -206,7 +215,7 @@ def main():
 
     # Continually monitor for new jobs
     while True:
-        logging.info('Scanning for new Redmine jobs...'.format())
+        logging.info('Scanning for new Redmine jobs...')
 
         # Grab jobs
         issues = retrieve_issues(redmine)
@@ -216,7 +225,9 @@ def main():
             logging.info('No new jobs detected')
         else:
             # Queue up a slurm job for each new issue
-            for job in new_jobs:
+            for job, job_type in new_jobs.items():
+                logging.info('Detected {} job for Redmine issue {}'.format(job_type.upper(), job.id))
+
                 # Grab work directory
                 work_dir = bio_requests_setup(job)
 
@@ -232,70 +243,15 @@ def main():
                                          work_dir=work_dir,
                                          description=description)
 
+                cmd = prepare_automation_command(automation_script=job_type+'.py', pickles=pickles, work_dir=work_dir)
 
-                #############################################
-                ### Plug in your new Redmine scripts here ###
-                #############################################
+                submit_slurm_job(redmine_instance=redmine,
+                                 issue=job,
+                                 work_dir=work_dir,
+                                 cmd=cmd,
+                                 cpu_count=AUTOMATOR_KEYWORDS[job_type]['n_cpu'],
+                                 memory=AUTOMATOR_KEYWORDS[job_type]['memory'])
 
-                if job.subject.lower() == 'strainmash':
-                    logging.info('Detected STRAINMASH job for Redmine issue {}'.format(job.id))
-
-                    # Prepare command to call analysis script with pickled Redmine objects
-                    cmd = prepare_automation_command(automation_script='strainmash.py', pickles=pickles, work_dir=work_dir)
-
-                    submit_slurm_job(redmine_instance=redmine,
-                                     issue=job,
-                                     work_dir=work_dir,
-                                     cmd=cmd,
-                                     cpu_count=8,
-                                     memory=12000)
-
-                elif job.subject.lower() == 'wgs assembly':
-                    logging.info('Detected WGS ASSEMBLY job for Redmine issue {}'.format(job.id))
-
-                elif job.subject.lower() == 'autoclark':
-                    logging.info('Detected AUTOCLARK job for Redmine issue {}'.format(job.id))
-                    cmd = prepare_automation_command(automation_script='autoclark.py', pickles=pickles, work_dir=work_dir)
-
-                    submit_slurm_job(redmine_instance=redmine,
-                                     issue=job,
-                                     work_dir=work_dir,
-                                     cmd=cmd,
-                                     cpu_count=48,
-                                     memory=192000)
-
-                elif job.subject.lower() == 'snvphyl':
-                    logging.info('Detected SNVPHYL job for Redmine issue {}'.format(job.id))
-
-                elif job.subject.lower() == 'diversitree':
-                    logging.info('Detected DIVIERSITREE job for Redmine issue {}'.format(job.id))
-                    cmd = prepare_automation_command(automation_script='diversitree.py', pickles=pickles, work_dir=work_dir)
-
-                    submit_slurm_job(redmine_instance=redmine,
-                                     issue=job,
-                                     work_dir=work_dir,
-                                     cmd=cmd,
-                                     cpu_count=56,
-                                     memory=192000)
-
-                elif job.subject.lower() == 'irida retrieve':
-                    logging.info('Detected IRIDA RETRIEVE job for Redmine issue {}'.format(job.id))
-
-                elif job.subject.lower() == 'resfindr':
-                    logging.info('Detected RESFINDER job for Redmine issue {}'.format(job.id))
-
-                elif job.subject.lower() == 'external retrieve':
-                    logging.info('Detected EXTERNAL RETRIEVE job for Redmine issue {}'.format(job.id))
-
-                elif job.subject.lower() == 'autoroga':
-                    logging.info('Detected AUTOROGA job for Redmine issue {}'.format(job.id))
-
-                elif job.subject.lower() == 'retrieve':
-                    logging.info('Detected RETRIEVE job for Redmine issue {}'.format(job.id))
-
-            #############################################
-            #############################################
-            #############################################
 
         # Take a nap for 10 minutes
         logging.info('A new scan for issues will be performed in 10 minutes'.format())
