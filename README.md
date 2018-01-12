@@ -37,4 +37,29 @@ AUTOMATOR_KEYWORDS = {
 ```
 
 ### Tool Descriptions
-Coming soon™
+#### Strainmash
+**Description:** Reads a list of SeqIDs from a Redmine issue and calls Mash for each against a sketch of the entire GenBank strain database (Up to date as of Dec. 01, 2017). Returns a formatted Mash.screen output file per SeqID.
+
+**Usage:** Set your Redmine issue topic to 'Strainmash'.
+Then, enter a list of SeqIDs into the Description box. i.e.
+```
+2017-SEQ-0918
+2017-SEQ-0919
+2017-SEQ-0920
+2017-SEQ-0921
+```
+
+
+#### Diversitree
+**Description:**
+
+**Usage:**
+
+
+#### AutoCLARK
+**Description:**
+
+**Usage:**
+
+
+... more Coming Soon™
