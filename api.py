@@ -33,9 +33,12 @@ def new_automation_jobs(issues):
     for issue in issues:
         # Only new issues
         if issue.status.name == 'New':
+            # Strip whitespace and make lowercase
+            subject = issue.subject.lower().replace(' ','')
+
             # Check for presence of an automator keyword in subject line
-            if issue.subject.lower().replace(' ','') in AUTOMATOR_KEYWORDS:
-                new_jobs[issue] = issue.subject.lower().replace(' ','')
+            if subject in AUTOMATOR_KEYWORDS:
+                new_jobs[issue] = subject
                 logging.debug('{id}:{subject}:{status}'.format(id = issue.id,
                                                                subject = issue.subject,
                                                                status = issue.status))
@@ -58,8 +61,8 @@ def bio_requests_setup(issue):
 
 def issue_text_dump(issue):
     """
+    Dumps Redmine issue details into a text file
     :param issue: object pulled from Redmine instance
-    :param destination: output path for text file
     :return: path to text file
     """
     file_path = os.path.join(BIO_REQUESTS_DIR, str(issue.id), str(issue.id)+'_'+str(issue.subject)+'_redmine_details.txt')
@@ -88,6 +91,7 @@ def pickle_redmine(redmine_instance, issue, work_dir, description):
     :param work_dir: string path to working directory for Redmine job
     :return: dictionary with paths to redmine instance, issue and description pickles
     """
+    # Establish file paths
     pickled_redmine = os.path.join(work_dir, 'redmine.pickle')
     pickled_issue = os.path.join(work_dir, 'issue.pickle')
     pickled_description = os.path.join(work_dir, 'description.pickle')
@@ -128,6 +132,7 @@ def create_template(issue, cpu_count, memory, work_dir, cmd):
     :param cmd: string containing bash command
     :return: string file path to generated shell script
     """
+    # Prepare SLURM shell script contents
     template = "#!/bin/bash\n" \
                "#SBATCH -N 1\n" \
                "#SBATCH --ntasks={cpu_count}\n" \
@@ -191,7 +196,10 @@ def prepare_automation_command(automation_script, pickles, work_dir):
     :param work_dir: string path to working directory for Redmine job
     :return: string of completed command to pass to automation script
     """
+    # Get path to script responsible for running automation job
     automation_script_path = os.path.join(os.path.dirname(__file__), 'automators', automation_script)
+
+    # Prepare command
     cmd = 'python ' \
           '{script} ' \
           '--redmine_instance {redmine_pickle} ' \
@@ -224,7 +232,7 @@ def main():
         new_jobs = new_automation_jobs(issues)
 
         if len(new_jobs) > 0:
-            # Queue up a slurm job for each new issue
+            # Queue up a SLURM job for each new issue
             for job, job_type in new_jobs.items():
                 logging.info('Detected {} job for Redmine issue {}'.format(job_type.upper(), job.id))
 
