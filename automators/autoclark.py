@@ -71,6 +71,7 @@ def clark_redmine(redmine_instance, issue, work_dir, description):
     # Clean up all FASTA/FASTQ files so we don't take up too
     os.system('rm {workdir}/*fasta {workdir}/*fastq*'.format(workdir=work_dir))
 
+
 def verify_fastq_files_present(seqid_list, fastq_dir):
     """
     Makes sure that FASTQ files specified in seqid_list have been successfully copied/linked to directory specified
