@@ -32,11 +32,13 @@ def new_automation_jobs(issues):
     new_jobs = {}
     for issue in issues:
         # Only new issues
-        if issue.status.name == 'New': # change this to new for production
+        if issue.status.name == 'New':
             # Check for presence of an automator keyword in subject line
-            if issue.subject.lower() in AUTOMATOR_KEYWORDS:
-                new_jobs[issue] = issue.subject.lower()
-                logging.debug('{id}:{subject}:{status}'.format(id = issue.id, subject = issue.subject, status = issue.status))
+            if issue.subject.lower().replace(' ','') in AUTOMATOR_KEYWORDS:
+                new_jobs[issue] = issue.subject.lower().replace(' ','')
+                logging.debug('{id}:{subject}:{status}'.format(id = issue.id,
+                                                               subject = issue.subject,
+                                                               status = issue.status))
     return new_jobs
 
 
@@ -118,7 +120,7 @@ def make_executable(path):
 
 def create_template(issue, cpu_count, memory, work_dir, cmd):
     """
-    Creates a slurm job shell script
+    Creates a SLURM job shell script
     :param issue: object pulled from Redmine instance
     :param cpu_count: number of CPUs to allocate for slurm job
     :param memory: memory in MB to allocate for slurm job
@@ -141,10 +143,10 @@ def create_template(issue, cpu_count, memory, work_dir, cmd):
                               work_dir=work_dir,
                               cmd=cmd)
 
-    # Path to slurm shell script
+    # Path to SLURM shell script
     file_path = os.path.join(BIO_REQUESTS_DIR, str(issue.id), str(issue.id) + '_slurm.sh')
 
-    # Write slurm job to shell script
+    # Write SLURM job to shell script
     with open(file_path, 'w+') as file:
         file.write(template)
 
@@ -242,7 +244,9 @@ def main():
                                          description=description)
 
                 # Prepare command
-                cmd = prepare_automation_command(automation_script=job_type + '.py', pickles=pickles, work_dir=work_dir)
+                cmd = prepare_automation_command(automation_script=job_type + '.py',
+                                                 pickles=pickles,
+                                                 work_dir=work_dir)
 
                 # Submit job
                 submit_slurm_job(redmine_instance=redmine,
