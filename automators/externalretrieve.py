@@ -65,7 +65,7 @@ def externalretrieve_redmine(redmine_instance, issue, work_dir, description):
 
     # Check that we got all the requested files.
     missing_fastas = check_fastas_present(fasta_list, os.path.join(work_dir, str(issue.id)))
-    missing_fastqs = check_fastas_present(fastq_list, os.path.join(work_dir, str(issue.id)))
+    missing_fastqs = check_fastqs_present(fastq_list, os.path.join(work_dir, str(issue.id)))
     if len(missing_fastqs) > 0:
         redmine_instance.issue.update(resource_id=issue.id,
                                       notes='WARNING: Could not find the following requested FASTQ SEQIDs on'
