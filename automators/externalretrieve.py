@@ -43,7 +43,7 @@ def externalretrieve_redmine(redmine_instance, issue, work_dir, description):
     # Write SEQIDs to file to be extracted as FASTAs and copy them to the biorequest dir.
     if len(fasta_list) > 0:
         with open(os.path.join(work_dir, 'seqid.txt'), 'w') as f:
-            for seqid in fastq_list:
+            for seqid in fasta_list:
                 f.write(seqid + '\n')
         cmd = 'python2 /mnt/nas/WGSspades/file_extractor.py {seqidlist} ' \
               '{output_folder} /mnt/nas/'.format(seqidlist=os.path.join(work_dir, 'seqid.txt'),
@@ -53,7 +53,7 @@ def externalretrieve_redmine(redmine_instance, issue, work_dir, description):
     # Extract FASTQ files.
     if len(fastq_list) > 0:
         with open(os.path.join(work_dir, 'seqid.txt'), 'w') as f:
-            for seqid in fasta_list:
+            for seqid in fastq_list:
                 f.write(seqid + '\n')
         current_dir = os.getcwd()
         os.chdir('/mnt/nas/MiSeq_Backup')
