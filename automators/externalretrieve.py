@@ -43,7 +43,7 @@ def externalretrieve_redmine(redmine_instance, issue, work_dir, description):
     # Write SEQIDs to file to be extracted as FASTAs and copy them to the biorequest dir.
     if len(fasta_list) > 0:
         with open(os.path.join(work_dir, 'seqid.txt'), 'w') as f:
-            for seqid in fasta_list:
+            for seqid in fastq_list:
                 f.write(seqid + '\n')
         cmd = 'python2 /mnt/nas/WGSspades/file_extractor.py {seqidlist} ' \
               '{output_folder} /mnt/nas/'.format(seqidlist=os.path.join(work_dir, 'seqid.txt'),
@@ -78,7 +78,7 @@ def externalretrieve_redmine(redmine_instance, issue, work_dir, description):
 
     # Now make a zip folder that we'll upload to the FTP.
     shutil.make_archive(root_dir=os.path.join(work_dir, str(issue.id)),
-                        format=zip,
+                        format='zip',
                         base_name=os.path.join(work_dir, str(issue.id)))
 
     # Now need to login to the FTP to upload the zipped folder.
@@ -95,6 +95,9 @@ def externalretrieve_redmine(redmine_instance, issue, work_dir, description):
         os.remove(os.path.join(work_dir, str(issue.id) + '.zip'))
     except:
         pass
+
+    redmine_instance.issue.update(resource_id=issue.id, status_id=4,
+                                  notes='External Retrieve process complete!')
 
 
 def check_fastas_present(fasta_list, fasta_dir):
