@@ -58,8 +58,8 @@ def externalretrieve_redmine(redmine_instance, issue, work_dir, description):
         current_dir = os.getcwd()
         os.chdir('/mnt/nas/MiSeq_Backup')
         cmd = 'python2 file_extractor.py {seqidlist} ' \
-              '{output_folder} /mnt/nas/'.format(seqidlist=os.path.join(work_dir, 'seqid.txt'),
-                                                 output_folder=os.path.join(work_dir, str(issue.id)))
+              '{output_folder}'.format(seqidlist=os.path.join(work_dir, 'seqid.txt'),
+                                       output_folder=os.path.join(work_dir, str(issue.id)))
         os.system(cmd)
         os.chdir(current_dir)
 
