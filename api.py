@@ -221,9 +221,7 @@ def main():
         issues = retrieve_issues(redmine)
         new_jobs = new_automation_jobs(issues)
 
-        if len(new_jobs) == 0:
-            logging.info('No new jobs detected')
-        else:
+        if len(new_jobs) > 0:
             # Queue up a slurm job for each new issue
             for job, job_type in new_jobs.items():
                 logging.info('Detected {} job for Redmine issue {}'.format(job_type.upper(), job.id))
@@ -243,15 +241,18 @@ def main():
                                          work_dir=work_dir,
                                          description=description)
 
-                cmd = prepare_automation_command(automation_script=job_type+'.py', pickles=pickles, work_dir=work_dir)
+                # Prepare command
+                cmd = prepare_automation_command(automation_script=job_type + '.py', pickles=pickles, work_dir=work_dir)
 
+                # Submit job
                 submit_slurm_job(redmine_instance=redmine,
                                  issue=job,
                                  work_dir=work_dir,
                                  cmd=cmd,
                                  cpu_count=AUTOMATOR_KEYWORDS[job_type]['n_cpu'],
                                  memory=AUTOMATOR_KEYWORDS[job_type]['memory'])
-
+        else:
+            logging.info('No new jobs detected')
 
         # Take a nap for 10 minutes
         logging.info('A new scan for issues will be performed in 10 minutes'.format())
