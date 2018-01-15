@@ -11,7 +11,8 @@ def redmine_setup(api_key):
     :param api_key: API key available from your Redmine user account settings. Stored in setup.py.
     :return: instantiated Redmine API object
     """
-    redmine = Redmine('http://redmine.biodiversity.agr.gc.ca/', key=api_key)
+    redmine_url = 'http://redmine.biodiversity.agr.gc.ca/'
+    redmine = Redmine(redmine_url, key=api_key)
     return redmine
 
 
@@ -33,9 +34,8 @@ def new_automation_jobs(issues):
     for issue in issues:
         # Only new issues
         if issue.status.name == 'New':
-            # Strip whitespace and make lowercase
+            # Strip whitespace and make lowercase ('subject' is the job type i.e. Diversitree)
             subject = issue.subject.lower().replace(' ','')
-
             # Check for presence of an automator keyword in subject line
             if subject in AUTOMATOR_KEYWORDS:
                 new_jobs[issue] = subject
@@ -216,7 +216,7 @@ def prepare_automation_command(automation_script, pickles, work_dir):
 def main():
     # Config logger to show a timestamp
     logging.basicConfig(
-        format='%(asctime)s %(levelname)-8s %(message)s',
+        format='\033[92m \033[1m %(asctime)s %(levelname)-8s \033[0m %(message)s ',
         level=logging.INFO,
         datefmt='%Y-%m-%d %H:%M:%S')
 
@@ -267,7 +267,7 @@ def main():
             logging.info('No new jobs detected')
 
         # Take a nap for 10 minutes
-        logging.info('A new scan for issues will be performed in 10 minutes'.format())
+        logging.info('A new scan for issues will be performed in 10 minutes')
         time.sleep(600)
 
 
