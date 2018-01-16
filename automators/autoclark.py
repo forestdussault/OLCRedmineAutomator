@@ -94,7 +94,7 @@ def verify_fastq_files_present(seqid_list, fastq_dir):
 def verify_fasta_files_present(seqid_list, fasta_dir):
     missing_fastas = list()
     for seqid in seqid_list:
-        if len(glob.glob(os.path.join(fasta_dir, seqid, '*.fasta'))) == 0:
+        if len(glob.glob(os.path.join(fasta_dir, seqid + '*.fasta'))) == 0:
             missing_fastas.append(seqid)
     return missing_fastas
 

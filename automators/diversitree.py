@@ -66,7 +66,7 @@ def diversitree_redmine(redmine_instance, issue, work_dir, description):
     output_dict['filename'] = 'strains.txt'
     output_list.append(output_dict)
     output_dict = dict()
-    output_dict['path'] = os.path.join(work_dir, 'output', 'pruned.tree')
+    output_dict['path'] = os.path.join(work_dir, 'output', 'parsnp.tree')
     output_dict['filename'] = 'tree.nwk'
     output_list.append(output_dict)
     redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=4,
