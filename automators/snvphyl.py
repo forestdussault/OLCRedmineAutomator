@@ -99,7 +99,7 @@ def snvphyl_redmine(redmine_instance, issue, work_dir, description):
     os.system(cmd)
 
     # Now need to create a zip archive of the results file, upload it, and clean up the fastq files.
-    shutil.make_archive('SNVPhyl_' + str(issue.id), 'zip', os.path.join(work_dir, 'output'))
+    shutil.make_archive(os.path.join(work_dir, 'SNVPhyl_' + str(issue.id)), 'zip', os.path.join(work_dir, 'output'))
     output_list = list()
     output_dict = dict()
     output_dict['path'] = os.path.join(work_dir, 'SNVPhyl_' + str(issue.id) + '.zip')
