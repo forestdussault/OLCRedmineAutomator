@@ -216,7 +216,7 @@ def prepare_automation_command(automation_script, pickles, work_dir):
 def main():
     # Config logger to show a timestamp
     logging.basicConfig(
-        format='\033[92m \033[1m %(asctime)s %(levelname)-8s \033[0m %(message)s ',
+        format='\033[92m \033[1m %(asctime)s \033[0m %(message)s ',
         level=logging.INFO,
         datefmt='%Y-%m-%d %H:%M:%S')
 
