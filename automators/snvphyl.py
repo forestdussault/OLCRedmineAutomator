@@ -23,6 +23,8 @@ def snvphyl_redmine(redmine_instance, issue, work_dir, description):
     # Go through description to figure out what our query is and what the reference is.
     for item in description:
         item = item.upper()
+        if item == '':
+            continue
         if 'COMPARE' in item:
             compare = True
             continue
