@@ -160,6 +160,16 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
                                                        wgsspades_folder=local_wgs_spades_folder)
     os.system(cmd)
 
+    # Upload the results of the sequencing run to Redmine.
+    shutil.make_archive(os.path.join(work_dir, sequence_folder), 'zip', os.path.join(local_wgs_spades_folder, 'reports'))
+    output_list = list()
+    output_dict = dict()
+    output_dict['path'] = os.path.join(work_dir, sequence_folder + '.zip')
+    output_dict['filename'] = sequence_folder + '.zip'
+    output_list.append(output_dict)
+    redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=4,
+                                  notes='WGS Assembly Complete!')
+
 
 def check_if_file(file_name, ftp_dir):
     ftp = FTP('ftp.agr.gc.ca', user=FTP_USERNAME, passwd=FTP_PASSWORD)
@@ -300,7 +310,7 @@ def verify_fastq_sizes(sequence_folder):
             file_size = ftp.size(item)
             if file_size < 100000:
                 tiny_fastqs.append(item)
-        ftp.quit()
+    ftp.quit()
     return tiny_fastqs
 
 
@@ -342,6 +352,7 @@ def verify_seqid_formatting(sequence_folder):
                 badly_formatted_files.append(item)
     ftp.quit()
     return badly_formatted_files
+
 
 def verify_folder_exists(sequence_folder):
     ftp = FTP('ftp.agr.gc.ca', user=FTP_USERNAME, passwd=FTP_PASSWORD)
