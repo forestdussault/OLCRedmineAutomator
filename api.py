@@ -35,13 +35,13 @@ def new_automation_jobs(issues):
         # Only new issues
         if issue.status.name == 'New':
             # Strip whitespace and make lowercase ('subject' is the job type i.e. Diversitree)
-            subject = issue.subject.lower().replace(' ','')
+            subject = issue.subject.lower().replace(' ', '')
             # Check for presence of an automator keyword in subject line
             if subject in AUTOMATOR_KEYWORDS:
                 new_jobs[issue] = subject
-                logging.debug('{id}:{subject}:{status}'.format(id = issue.id,
-                                                               subject = issue.subject,
-                                                               status = issue.status))
+                logging.debug('{id}:{subject}:{status}'.format(id=issue.id,
+                                                               subject=issue.subject,
+                                                               status=issue.status))
     return new_jobs
 
 
@@ -65,7 +65,9 @@ def issue_text_dump(issue):
     :param issue: object pulled from Redmine instance
     :return: path to text file
     """
-    file_path = os.path.join(BIO_REQUESTS_DIR, str(issue.id), str(issue.id)+'_'+str(issue.subject)+'_redmine_details.txt')
+    file_path = os.path.join(BIO_REQUESTS_DIR,
+                             str(issue.id),
+                             str(issue.id) + '_' + str(issue.subject) + '_redmine_details.txt')
     with open(file_path, 'w+') as file:
         for attr in dir(issue):
             file.write('{}: {}\n\n'.format(attr, getattr(issue, attr)))
@@ -89,6 +91,7 @@ def pickle_redmine(redmine_instance, issue, work_dir, description):
     :param redmine_instance: instantiated Redmine API object
     :param issue: object pulled from Redmine instance
     :param work_dir: string path to working directory for Redmine job
+    :param description: parsed redmine description list object
     :return: dictionary with paths to redmine instance, issue and description pickles
     """
     # Establish file paths
@@ -166,7 +169,6 @@ def submit_slurm_job(redmine_instance, issue, work_dir, cmd, cpu_count=8, memory
     Wrapper for several tasks necessary to submit a SLURM job.
     This function will update the issue, then create a shell script for SLURM, then run the shell script on the cluster.
     :param redmine_instance: instantiated Redmine API object
-    :param resource_id: ID pulled from issue instance
     :param issue: object pulled from Redmine instance
     :param work_dir: string path to working directory for Redmine job
     :param cmd: string containing bash command
@@ -227,8 +229,10 @@ def main():
     while True:
         logging.info('Scanning for new Redmine jobs...')
 
-        # Grab jobs
+        # Grab all issues belonging to CFIA
         issues = retrieve_issues(redmine)
+
+        # Pull any new automation job requests from issues
         new_jobs = new_automation_jobs(issues)
 
         if len(new_jobs) > 0:
