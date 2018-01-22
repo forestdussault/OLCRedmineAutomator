@@ -225,10 +225,14 @@ def main():
     # Log into Redmine
     redmine = redmine_setup(API_KEY)
 
+    # Greetings
+    logging.info('The OLCRedmineAutomator is now operational and actively monitoring jobs.')
+
+    # Variable for counting while loop interations
+    monitor_var = 0
+
     # Continually monitor for new jobs
     while True:
-        logging.info('Scanning for new Redmine jobs...')
-
         # Grab all issues belonging to CFIA
         issues = retrieve_issues(redmine)
 
@@ -267,12 +271,16 @@ def main():
                                  cmd=cmd,
                                  cpu_count=AUTOMATOR_KEYWORDS[job_type]['n_cpu'],
                                  memory=AUTOMATOR_KEYWORDS[job_type]['memory'])
-        else:
-            logging.info('No new jobs detected')
 
-        # Take a nap for 10 minutes
-        logging.info('A new scan for issues will be performed in 10 minutes')
-        time.sleep(600)
+
+        # Pause for 5 seconds
+        time.sleep(5)
+        monitor_var += 1
+
+        # Log a message every 30 minutes
+        if monitor_var >= 360:
+            logging.info('OLCRedmineAutomator is operational. Scanning...')
+            monitor_var = 0
 
 
 if __name__ == '__main__':
