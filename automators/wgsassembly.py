@@ -115,7 +115,7 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
         return
 
     # Create the local folder that we'll need.
-    lab_id = sequence_folder.split('_')[1]
+    lab_id = samplesheet_seqids[0].split('-')[1]
     if lab_id == 'SEQ':
         local_folder = os.path.join('/mnt/nas/MiSeq_Backup', sequence_folder)
     else:
@@ -126,13 +126,6 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
 
     # Download the folder, recursively!
     download_dir(sequence_folder, local_folder)
-
-    # Make redmine create an issue for that says that a run is in progress and a database entry needs
-    # to be made. assinged_to_id to use is 226. Priority is 3 (High).
-    redmine_instance.issue.create(project_id='cfia', subject='Run to add to database',
-                                  assigned_to_id=226, priority_id=3,
-                                  description='Run downloaded and beginning assembly process. See issue'
-                                              ' {}'.format(str(issue.id)))
 
     # Once the folder has been downloaded, create a symbolic link to the hdfs and start assembling using docker image.
     cmd = 'ln -s -r {local_folder} /hdfs'.format(local_folder=local_folder)
@@ -169,6 +162,13 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
     output_list.append(output_dict)
     redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=4,
                                   notes='WGS Assembly Complete!')
+
+    # Make redmine create an issue for that says that a run has finished and a database entry needs
+    # to be made. assinged_to_id to use is 226. Priority is 3 (High).
+    redmine_instance.issue.create(project_id='cfia', subject='Run to add to database',
+                                  assigned_to_id=226, priority_id=3,
+                                  description='A sequencing run has completed assembly. See issue'
+                                              ' {} for more information.'.format(str(issue.id)))
 
 
 def check_if_file(file_name, ftp_dir):
