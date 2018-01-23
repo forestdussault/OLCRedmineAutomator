@@ -119,7 +119,7 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
     if lab_id == 'SEQ':
         local_folder = os.path.join('/mnt/nas/MiSeq_Backup', sequence_folder)
     else:
-        local_folder = os.path.join('/mnt/nas/External_MiSeq_Backup', sequence_folder)
+        local_folder = os.path.join('/mnt/nas/External_MiSeq_Backup', lab_id, sequence_folder)
 
     if not os.path.isdir(local_folder):
         os.makedirs(local_folder)
@@ -128,7 +128,7 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
     download_dir(sequence_folder, local_folder)
 
     # Once the folder has been downloaded, create a symbolic link to the hdfs and start assembling using docker image.
-    cmd = 'ln -s -r {local_folder} /hdfs'.format(local_folder=local_folder)
+    cmd = 'cp -r {local_folder} /hdfs'.format(local_folder=local_folder)
     os.system(cmd)
     # Make sure that any previous docker containers are gone.
     os.system('docker rm -f spadespipeline')
@@ -154,7 +154,7 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
     os.system(cmd)
 
     # Upload the results of the sequencing run to Redmine.
-    shutil.make_archive(os.path.join(work_dir, sequence_folder), 'zip', os.path.join(local_wgs_spades_folder, 'reports'))
+    shutil.make_archive(os.path.join(work_dir, sequence_folder), 'zip', os.path.join(local_wgs_spades_folder, sequence_folder, 'reports'))
     output_list = list()
     output_dict = dict()
     output_dict['path'] = os.path.join(work_dir, sequence_folder + '.zip')
