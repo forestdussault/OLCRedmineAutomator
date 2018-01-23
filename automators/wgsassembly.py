@@ -177,6 +177,25 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
                                   description='A sequencing run has completed assembly. See issue'
                                               ' {} for more information.'.format(str(issue.id)))
 
+    # Copy the raw files to the hdfs again, and then we try out the new pipeline.
+    cmd = 'cp -r {local_folder} /hdfs'.format(local_folder=local_folder)
+    os.system(cmd)
+
+    # Run the new pipeline docker image, after making sure it doesn't exist.
+    cmd = 'docker rm -f cowbat'
+    os.system(cmd)
+    cmd = 'docker run -i -u $(id -u) -v /mnt/nas:/mnt/nas --name cowbat --rm cowbat:latest /bin/bash -c ' \
+          '"source activate cowbat && assembly_pipeline.py {hdfs_folder} -r /mnt/nas/assemblydatabases' \
+          '/0.2.1/"'.format(hdfs_folder=os.path.join('/hdfs', sequence_folder))
+    os.system(cmd)
+
+    # Move new pipeline result files to scratch for inspection.
+    cmd = 'mv {hdfs_folder} {scratch_folder}'.format(hdfs_folder=os.path.join('/hdfs', sequence_folder),
+                                                     scratch_folder='/mnt/scratch/New_Pipeline_Assemblies')
+    os.system(cmd)
+    redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=4,
+                                  notes='WGS Assembly (new pipeline) complete, results stored on scratch.')
+
 
 def check_if_file(file_name, ftp_dir):
     ftp = FTP('ftp.agr.gc.ca', user=FTP_USERNAME, passwd=FTP_PASSWORD)
