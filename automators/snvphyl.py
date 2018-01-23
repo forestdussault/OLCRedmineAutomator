@@ -122,7 +122,7 @@ def check_distances(ref_fasta, fastq_folder, work_dir):
     mash_output = mash.read_mash_output(os.path.join(work_dir, 'distances.tab'))
     for item in mash_output:
         print(item.reference, item.query, str(item.distance))
-        if item.distance > 0.06:  # May need to adjust this value.
+        if item.distance > 0.15:  # Moved value from 0.06 to 0.15 - was definitely too conservative before.
             bad_fastqs.append(item.reference)
     return bad_fastqs
 
