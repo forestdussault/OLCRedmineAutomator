@@ -117,7 +117,7 @@ def check_distances(ref_fasta, fastq_folder, work_dir):
     bad_fastqs = list()
     # fastqs = glob.glob(os.path.join(fastq_folder, '*R1*'))
     mash.sketch(os.path.join(fastq_folder, '*R1*'), output_sketch=os.path.join(work_dir, 'sketch.msh'), threads=5)
-    mash.dist(os.path.join(work_dir, 'sketch.msh'), ref_fasta, threads=5,
+    mash.dist(os.path.join(work_dir, 'sketch.msh'), ref_fasta, threads=48,
               output_file=os.path.join(work_dir, 'distances.tab'))
     mash_output = mash.read_mash_output(os.path.join(work_dir, 'distances.tab'))
     for item in mash_output:
