@@ -114,6 +114,9 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
     if validation is False:
         return
 
+    redmine_instance.issue.update(resource_id=issue.id, status_id=2,
+                                  notes='All validation checks passed - beginning download of sequence files.')
+
     # Create the local folder that we'll need.
     lab_id = samplesheet_seqids[0].split('-')[1]
     if lab_id == 'SEQ':
@@ -126,6 +129,9 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
 
     # Download the folder, recursively!
     download_dir(sequence_folder, local_folder)
+    redmine_instance.issue.update(resource_id=issue.id, status_id=2,
+                                  notes='Download complete. Files were downloaded to {}.'
+                                        ' Beginning de novo assembly.'.format(local_folder))
 
     # Once the folder has been downloaded, create a symbolic link to the hdfs and start assembling using docker image.
     cmd = 'cp -r {local_folder} /hdfs'.format(local_folder=local_folder)
@@ -151,6 +157,7 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
 
     cmd = 'mv {hdfs_folder} {wgsspades_folder}'.format(hdfs_folder=os.path.join('/hdfs', sequence_folder),
                                                        wgsspades_folder=local_wgs_spades_folder)
+    print(cmd)
     os.system(cmd)
 
     # Upload the results of the sequencing run to Redmine.
