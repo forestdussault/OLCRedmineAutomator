@@ -242,6 +242,7 @@ def main():
         if len(new_jobs) > 0:
             # Queue up a SLURM job for each new issue
             for job, job_type in new_jobs.items():
+                logging.info('----'*12)
                 logging.info('Detected {} job for Redmine issue {}'.format(job_type.upper(), job.id))
 
                 # Grab work directory
@@ -271,7 +272,7 @@ def main():
                                  cmd=cmd,
                                  cpu_count=AUTOMATOR_KEYWORDS[job_type]['n_cpu'],
                                  memory=AUTOMATOR_KEYWORDS[job_type]['memory'])
-
+                logging.info('----' * 12)
 
         # Pause for 5 seconds
         time.sleep(5)
@@ -279,7 +280,7 @@ def main():
 
         # Log a message every 30 minutes
         if monitor_var >= 360:
-            logging.info('OLCRedmineAutomator is operational. Scanning...')
+            logging.info('OLCRedmineAutomator is ACTIVE')
             monitor_var = 0
 
 
