@@ -58,7 +58,7 @@ def closerelatives_redmine(redmine_instance, issue, work_dir, description):
     # Put all the results into a dictionary, where the key is the sequence file and the value is mash distance
     # between query fastq and reference fastq.
     for item in mash_results:
-        seq_name = os.path.split(item.reference)[-1].split('_')[0]
+        seq_name = os.path.split(item.query)[-1].split('_')[0]
         result_dict[seq_name] = item.distance
 
     # Sort the results, store the sorted dictionary keys in a list.
