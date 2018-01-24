@@ -117,7 +117,7 @@ def pickle_redmine(redmine_instance, issue, work_dir, description):
 
 def make_executable(path):
     """
-    Takes a shell script and makes it executable
+    Takes a shell script and makes it executable (chmod +x)
     :param path: path to shell script
     """
     mode = os.stat(path).st_mode
@@ -158,7 +158,6 @@ def create_template(issue, cpu_count, memory, work_dir, cmd):
     with open(file_path, 'w+') as file:
         file.write(template)
 
-    # chmod +x
     make_executable(file_path)
 
     return file_path
@@ -226,7 +225,9 @@ def main():
     redmine = redmine_setup(API_KEY)
 
     # Greetings
-    logging.info('The OLCRedmineAutomator is now operational and actively monitoring jobs.')
+    logging.info('####' * 12)
+    logging.info('## The OLCRedmineAutomator is now operational ##')
+    logging.info('####' * 12)
 
     # Variable for counting while loop interations
     monitor_var = 0
@@ -242,7 +243,6 @@ def main():
         if len(new_jobs) > 0:
             # Queue up a SLURM job for each new issue
             for job, job_type in new_jobs.items():
-                logging.info('----'*12)
                 logging.info('Detected {} job for Redmine issue {}'.format(job_type.upper(), job.id))
 
                 # Grab work directory
