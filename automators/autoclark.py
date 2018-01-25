@@ -15,61 +15,66 @@ def clark_redmine(redmine_instance, issue, work_dir, description):
     issue = pickle.load(open(issue, 'rb'))
     description = pickle.load(open(description, 'rb'))
 
-    # Parse description to figure out what SEQIDs we need to run on.
-    seqids = list()
-    fasta = False
-    for item in description:
-        item = item.upper()
-        if 'FASTA' in item:
-            fasta = True
-            continue
-        seqids.append(item)
+    try:
+        # Parse description to figure out what SEQIDs we need to run on.
+        seqids = list()
+        fasta = False
+        for item in description:
+            item = item.upper()
+            if 'FASTA' in item:
+                fasta = True
+                continue
+            seqids.append(item)
 
-    # Write SEQIDs to file to be extracted and CLARKed.
-    with open(os.path.join(work_dir, 'seqid.txt'), 'w') as f:
-        for seqid in seqids:
-            f.write(seqid + '\n')
+        # Write SEQIDs to file to be extracted and CLARKed.
+        with open(os.path.join(work_dir, 'seqid.txt'), 'w') as f:
+            for seqid in seqids:
+                f.write(seqid + '\n')
 
-    # If FASTQ, run file linker and then make sure that all FASTQ files requested are present. Warn user if they
-    # requested things that we don't have.
-    if not fasta:
-        current_dir = os.getcwd()
-        os.chdir('/mnt/nas/MiSeq_Backup')
-        cmd = 'python2 /mnt/nas/MiSeq_Backup/file_linker.py {}/seqid.txt {}'.format(work_dir, work_dir)
+        # If FASTQ, run file linker and then make sure that all FASTQ files requested are present. Warn user if they
+        # requested things that we don't have.
+        if not fasta:
+            current_dir = os.getcwd()
+            os.chdir('/mnt/nas/MiSeq_Backup')
+            cmd = 'python2 /mnt/nas/MiSeq_Backup/file_linker.py {}/seqid.txt {}'.format(work_dir, work_dir)
+            os.system(cmd)
+            os.chdir(current_dir)
+            missing_fastqs = verify_fastq_files_present(seqids, work_dir)
+            if missing_fastqs:
+                redmine_instance.issue.update(resource_id=issue.id,
+                                              notes='WARNING: Could not find the following requested SEQIDs on'
+                                                    ' the OLC NAS: {}'.format(missing_fastqs))
+
+        # If it's FASTA, extract them and make sure all are present.
+        if fasta:
+            cmd = 'python2 /mnt/nas/WGSspades/file_extractor.py {}/seqid.txt {} /mnt/nas/'.format(work_dir, work_dir)
+            os.system(cmd)
+            missing_fastas = verify_fasta_files_present(seqids, work_dir)
+            if missing_fastas:
+                redmine_instance.issue.update(resource_id=issue.id,
+                                              notes='WARNING: Could not find the following requested SEQIDs on'
+                                                    ' the OLC NAS: {}'.format(missing_fastas))
+
+        # Run CLARK for classification.
+        cmd = 'python -m metagenomefilter.automateCLARK -s {} -d /mnt/nas/Adam/RefseqDatabase/Bos_taurus/ ' \
+              '-C /home/ubuntu/Programs/CLARKSCV1.2.3.2/ {}\n'.format(work_dir, work_dir)
         os.system(cmd)
-        os.chdir(current_dir)
-        missing_fastqs = verify_fastq_files_present(seqids, work_dir)
-        if missing_fastqs:
-            redmine_instance.issue.update(resource_id=issue.id,
-                                          notes='WARNING: Could not find the following requested SEQIDs on'
-                                                ' the OLC NAS: {}'.format(missing_fastqs))
 
-    # If it's FASTA, extract them and make sure all are present.
-    if fasta:
-        cmd = 'python2 /mnt/nas/WGSspades/file_extractor.py {}/seqid.txt {} /mnt/nas/'.format(work_dir, work_dir)
-        os.system(cmd)
-        missing_fastas = verify_fasta_files_present(seqids, work_dir)
-        if missing_fastas:
-            redmine_instance.issue.update(resource_id=issue.id,
-                                          notes='WARNING: Could not find the following requested SEQIDs on'
-                                                ' the OLC NAS: {}'.format(missing_fastas))
+        # Get the output file uploaded.
+        output_list = list()
+        output_dict = dict()
+        output_dict['path'] = os.path.join(work_dir, 'reports', 'abundance.xlsx')
+        output_dict['filename'] = 'abundance.xlsx'
+        output_list.append(output_dict)
+        redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=4,
+                                      notes='AutoCLARK process complete!')
 
-    # Run CLARK for classification.
-    cmd = 'python -m metagenomefilter.automateCLARK -s {} -d /mnt/nas/Adam/RefseqDatabase/Bos_taurus/ ' \
-          '-C /home/ubuntu/Programs/CLARKSCV1.2.3.2/ {}\n'.format(work_dir, work_dir)
-    os.system(cmd)
-
-    # Get the output file uploaded.
-    output_list = list()
-    output_dict = dict()
-    output_dict['path'] = os.path.join(work_dir, 'reports', 'abundance.xlsx')
-    output_dict['filename'] = 'abundance.xlsx'
-    output_list.append(output_dict)
-    redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=4,
-                                  notes='AutoCLARK process complete!')
-
-    # Clean up all FASTA/FASTQ files so we don't take up too
-    os.system('rm {workdir}/*fasta {workdir}/*fastq*'.format(workdir=work_dir))
+        # Clean up all FASTA/FASTQ files so we don't take up too
+        os.system('rm {workdir}/*fasta {workdir}/*fastq*'.format(workdir=work_dir))
+    except Exception as e:
+        redmine_instance.issue.update(resource_id=issue.id,
+                                      notes='Something went wrong! Send this error traceback to your friendly '
+                                            'neighborhood bioinformatician: {}'.format(e))
 
 
 def verify_fastq_files_present(seqid_list, fastq_dir):
