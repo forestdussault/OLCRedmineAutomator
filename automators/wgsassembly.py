@@ -156,13 +156,14 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
         else:
             local_wgs_spades_folder = '/mnt/nas/WGSspades'
 
+        local_wgs_spades_folder = os.path.join(local_wgs_spades_folder, sequence_folder + '_Assembled')
         cmd = 'mv {hdfs_folder} {wgsspades_folder}'.format(hdfs_folder=os.path.join('/hdfs', sequence_folder),
                                                            wgsspades_folder=local_wgs_spades_folder)
         print(cmd)
         os.system(cmd)
 
         # Upload the results of the sequencing run to Redmine.
-        shutil.make_archive(os.path.join(work_dir, sequence_folder), 'zip', os.path.join(local_wgs_spades_folder, sequence_folder, 'reports'))
+        shutil.make_archive(os.path.join(work_dir, sequence_folder), 'zip', os.path.join(local_wgs_spades_folder, 'reports'))
         output_list = list()
         output_dict = dict()
         output_dict['path'] = os.path.join(work_dir, sequence_folder + '.zip')
@@ -194,7 +195,7 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
         cmd = 'mv {hdfs_folder} {scratch_folder}'.format(hdfs_folder=os.path.join('/hdfs', sequence_folder),
                                                          scratch_folder='/mnt/scratch/New_Pipeline_Assemblies')
         os.system(cmd)
-        redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=4,
+        redmine_instance.issue.update(resource_id=issue.id, status_id=4,
                                       notes='WGS Assembly (new pipeline) complete, results stored on scratch.')
     except Exception as e:
         redmine_instance.issue.update(resource_id=issue.id,
