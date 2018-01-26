@@ -52,7 +52,7 @@ def closerelatives_redmine(redmine_instance, issue, work_dir, description):
 
         # Run mash dist with the FASTQ file specified against the sketch of all our stuff.
         query_fastq = glob.glob(os.path.join(work_dir, '*R1*'))[0]
-        mash.dist(query_fastq, '/mnt/nas/bio_requests/10937/test_sketch.msh',
+        mash.dist(query_fastq, '/mnt/nas/bio_requests/10937/all_sequences.msh',
                   m='3', threads=48, output_file=os.path.join(work_dir, 'distances.tab'))
         mash_results = mash.read_mash_output(os.path.join(work_dir, 'distances.tab'))
         result_dict = dict()
