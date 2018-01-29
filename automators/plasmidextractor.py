@@ -70,7 +70,7 @@ def plasmidextractor_redmine(redmine_instance, issue, work_dir, description):
 
     # Create another shell script to execute within the PlasmidExtractor conda environment
     template = "#!/bin/bash\n{} && {}".format(activate, cmd)
-    plasmid_extractor_script = os.path.join(work_dir, 'plasmid_extractor.sh')
+    plasmid_extractor_script = os.path.join(work_dir, 'run_plasmidextractor.sh')
     with open(plasmid_extractor_script, 'w+') as file:
         file.write(template)
     make_executable(plasmid_extractor_script)
@@ -79,14 +79,17 @@ def plasmidextractor_redmine(redmine_instance, issue, work_dir, description):
     os.system(plasmid_extractor_script)
 
     # Zip output
-    plasmidextractor_output_dir = os.path.join(work_dir, 'output')
-    zip_file = zip_folder(plasmidextractor_output_dir, work_dir)
+    output_filename = 'PlasmidExtractor_output'
+    zip_filepath = zip_folder(results_path = output_folder,
+                              output_dir = work_dir,
+                              output_filename = output_filename)
+    zip_filepath += '.zip'
 
     # Prepare upload
     output_list = [
         {
-            'filename': 'PlasmidExtractor_output.zip',
-            'path': zip_file
+            'filename': output_filename,
+            'path': zip_filepath
         }
     ]
 
@@ -105,9 +108,9 @@ def make_executable(path):
     os.chmod(path, mode)
 
 
-def zip_folder(result_path, output_path):
-    output_path = os.path.join(output_path, 'PlasmidExtractor_output')
-    shutil.make_archive(output_path, 'zip', result_path)
+def zip_folder(results_path, output_dir, output_filename):
+    output_path = os.path.join(output_dir, output_filename)
+    shutil.make_archive(output_path, 'zip', results_path)
     return output_path
 
 
