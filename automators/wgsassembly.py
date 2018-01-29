@@ -134,7 +134,7 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
                                       notes='Download complete. Files were downloaded to {}.'
                                             ' Beginning de novo assembly.'.format(local_folder))
 
-        # Once the folder has been downloaded, create a symbolic link to the hdfs and start assembling using docker image.
+        # Once the folder has been downloaded, copy it to the hdfs and start assembling using docker image.
         cmd = 'cp -r {local_folder} /hdfs'.format(local_folder=local_folder)
         os.system(cmd)
         # Make sure that any previous docker containers are gone.
@@ -169,15 +169,14 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
         output_dict['path'] = os.path.join(work_dir, sequence_folder + '.zip')
         output_dict['filename'] = sequence_folder + '.zip'
         output_list.append(output_dict)
-        redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=4,
+        redmine_instance.issue.update(resource_id=issue.id, uploads=output_list,
                                       notes='WGS Assembly Complete!')
 
         # Make redmine create an issue for that says that a run has finished and a database entry needs
         # to be made. assinged_to_id to use is 226. Priority is 3 (High).
-        redmine_instance.issue.create(project_id='cfia', subject='Run to add to database',
+        redmine_instance.issue.update(resource_id=issue.id,
                                       assigned_to_id=226, priority_id=3,
-                                      description='A sequencing run has completed assembly. See issue'
-                                                  ' {} for more information.'.format(str(issue.id)))
+                                      notes='This run has finished assembly! Please add it to the OLC Database.')
 
         # Copy the raw files to the hdfs again, and then we try out the new pipeline.
         cmd = 'cp -r {local_folder} /hdfs'.format(local_folder=local_folder)
