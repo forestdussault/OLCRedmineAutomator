@@ -88,7 +88,7 @@ def plasmidextractor_redmine(redmine_instance, issue, work_dir, description):
     # Prepare upload
     output_list = [
         {
-            'filename': output_filename,
+            'filename': os.path.basename(zip_filepath),
             'path': zip_filepath
         }
     ]
