@@ -163,7 +163,7 @@ def create_template(issue, cpu_count, memory, work_dir, cmd):
     return file_path
 
 
-def submit_slurm_job(redmine_instance, issue, work_dir, cmd, cpu_count=8, memory=12000):
+def submit_slurm_job(redmine_instance, issue, work_dir, cmd, job_type, cpu_count=8, memory=12000):
     """
     Wrapper for several tasks necessary to submit a SLURM job.
     This function will update the issue, then create a shell script for SLURM, then run the shell script on the cluster.
@@ -177,7 +177,7 @@ def submit_slurm_job(redmine_instance, issue, work_dir, cmd, cpu_count=8, memory
     # Set status of issue to In Progress
     redmine_instance.issue.update(resource_id=issue.id,
                                   status_id=2,
-                                  notes='Your job has been submitted to the OLC Slurm cluster.')
+                                  notes='Your {} job has been submitted to the OLC Slurm cluster.'.format(job_type))
     logging.info('Updated job status for {} to In Progress'.format(issue.id))
 
     # Create shell script
@@ -270,6 +270,7 @@ def main():
                                  issue=job,
                                  work_dir=work_dir,
                                  cmd=cmd,
+                                 job_type=job_type,
                                  cpu_count=AUTOMATOR_KEYWORDS[job_type]['n_cpu'],
                                  memory=AUTOMATOR_KEYWORDS[job_type]['memory'])
                 logging.info('----' * 12)
