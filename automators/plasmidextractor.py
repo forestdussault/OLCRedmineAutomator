@@ -1,9 +1,8 @@
 import os
-import glob
 import click
 import pickle
-import subprocess
-from biotools import mash
+import shutil
+
 
 @click.command()
 @click.option('--redmine_instance', help='Path to pickled Redmine API instance')
@@ -21,11 +20,20 @@ def plasmidextractor_redmine(redmine_instance, issue, work_dir, description):
     for i in range(0, len(description)):
         item = description[i]
         item = item.upper()
-        seqids.append(item)
+
+        # Minimal check to make sure IDs provided somewhat resemble a valid sample ID
+        if item.isalpha():
+            pass
+        else:
+            seqids.append(item)
 
     # Create folder to drop FASTQ files
     raw_reads_folder = os.path.join(work_dir, 'raw_reads')
     os.mkdir(raw_reads_folder)
+
+    # Create output folder
+    output_folder = os.path.join(work_dir, 'output')
+    os.mkdir(output_folder)
 
     # Extract FASTQ files.
     if len(seqids) > 0:
@@ -40,12 +48,67 @@ def plasmidextractor_redmine(redmine_instance, issue, work_dir, description):
         os.system(cmd)
         os.chdir(current_dir)
 
-    redmine_instance.issue.update(resource_id=issue.id, status_id=4)
+    # These unfortunate hard coded paths appear to be necessary
+    activate = 'source /home/ubuntu/miniconda3/bin/activate /home/ubuntu/miniconda3/envs/plasmidextractor'
+    plasmid_extractor_py = '/home/ubuntu/miniconda3/envs/plasmidextractor/bin/PlasmidExtractor.py'
+
+    # Database locations
+    plasmid_db = '/mnt/nas/Databases/PlasmidExtractor/databases/plasmid_db.fasta'
+    amr_db = '/mnt/nas/Databases/PlasmidExtractor/databases'
+
+    # Prepare command
+    cmd = '{plasmid_extractor_py} ' \
+          '-i {raw_reads_folder} ' \
+          '-o {output_folder} ' \
+          '-p {plasmid_db} ' \
+          '-d {amr_db}'.format(activate=activate,
+                               plasmid_extractor_py=plasmid_extractor_py,
+                               raw_reads_folder=raw_reads_folder,
+                               output_folder=output_folder,
+                               plasmid_db=plasmid_db,
+                               amr_db=amr_db)
+
+    # Create another shell script to execute within the PlasmidExtractor conda environment
+    template = "#!/bin/bash\n{} && {}".format(activate, cmd)
+    plasmid_extractor_script = os.path.join(work_dir, 'plasmid_extractor.sh')
+    with open(plasmid_extractor_script, 'w+') as file:
+        file.write(template)
+    make_executable(plasmid_extractor_script)
+
+    # Run shell script
+    os.system(plasmid_extractor_script)
+
+    # Zip output
+    plasmidextractor_output_dir = os.path.join(work_dir, 'output')
+    zip_file = zip_folder(plasmidextractor_output_dir, work_dir)
+
+    # Prepare upload
+    output_list = [
+        {
+            'filename': 'PlasmidExtractor_output.zip',
+            'path': zip_file
+        }
+    ]
+
+    # Wrap up issue
+    redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=4,
+                                  notes='PlasmidExtractor process complete!')
 
 
-# TODO: conda must be installed in order to call PlasmidExtractor
-def call_plasmidextractor(work_dir):
-    p = subprocess.Popen('python PlasmidExtractor.py')
+def make_executable(path):
+    """
+    Takes a shell script and makes it executable (chmod +x)
+    :param path: path to shell script
+    """
+    mode = os.stat(path).st_mode
+    mode |= (mode & 0o444) >> 2
+    os.chmod(path, mode)
+
+
+def zip_folder(result_path, output_path):
+    output_path = os.path.join(output_path, 'PlasmidExtractor_output')
+    shutil.make_archive(output_path, 'zip', result_path)
+    return output_path
 
 
 if __name__ == '__main__':
