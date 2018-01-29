@@ -6,7 +6,7 @@ bioinformatics tools for use through Redmine.
 The majority of our tools work by parsing a list of Sample IDs provided
 in the description field of a Redmine issue submitted through the
 [OLC Redmine portal](http://redmine.biodiversity.agr.gc.ca/projects/cfia/).
-The requested tool to run the analysis on must be specified in the subject line.
+The requested tool to run the analysis must be specified in the subject line.
 
 Below are a list of acceptable keywords that the OLCRedmineAutomator
 will detect in an issue subject line. The amount of resources allocated
