@@ -93,7 +93,7 @@ def verify_fastq_files_present(seqid_list, fastq_dir):
         # Check reverse. Only add to list of missing if forward wasn't present.
         if len(glob.glob(fastq_dir + '/' + seqid + '*R2*fastq*')) == 0 and seqid not in missing_fastqs:
             missing_fastqs.append(seqid)
-        return missing_fastqs
+    return missing_fastqs
 
 
 def verify_fasta_files_present(seqid_list, fasta_dir):
