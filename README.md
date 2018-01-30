@@ -10,7 +10,7 @@ The requested tool to run the analysis must be specified in the subject line.
 
 Below are a list of acceptable keywords that the OLCRedmineAutomator
 will detect in an issue subject line. The amount of resources allocated
-for a particular job type is also shown.
+to the OLC Slurm cluster for each respective job type is also displayed.
 
 | Keyword          | CPUs |  RAM (GB)|
 | ---------------  |:----:|:--------:|
@@ -22,6 +22,7 @@ for a particular job type is also shown.
 | External Retrieve| 1    |  6       |
 | PlasmidExtractor | 48   |  192     |
 | Merge            | 48   |  192     |
+| CloseRelatives   | 48   |  192     |
 
 
 ### Tool Descriptions (Work in progress)
