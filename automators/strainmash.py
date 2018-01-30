@@ -38,7 +38,8 @@ def strainmash_redmine(redmine_instance, issue, work_dir, description):
     os.system(cmd)
 
     # Create output directory
-    os.mkdir(os.path.join(work_dir, 'output'))
+    output_dir = os.path.join(work_dir, 'output')
+    os.mkdir(output_dir)
 
     # Get all of the FASTA files
     fasta_list = glob.glob(os.path.join(work_dir, '*.fasta'))
@@ -48,20 +49,26 @@ def strainmash_redmine(redmine_instance, issue, work_dir, description):
 
     # Run mash_screen on everything
     for item in fasta_list:
-        output_filename = os.path.join(work_dir, 'output', (item.replace('.fasta', '') + '_strainmash.txt'))
+        output_filepath = os.path.join(output_dir, (item.replace('.fasta', '') + '_strainmash.txt'))
 
         # Setup dictionary for upload to Redmine
-        output_dict = {}
-        output_dict['path'] = output_filename
-        output_dict['filename'] = os.path.basename(output_filename)
+        output_list.append(
+            {
+                'path': output_filepath,
+                'filename': os.path.basename(output_filepath)
+            }
+        )
 
-        output_list.append(output_dict)
         mash_screen(reference=typestrain_db_path,
                     queryfile=item,
-                    outname=output_filename)
+                    outname=output_filepath)
 
     # Upload files, set status to Feedback
     redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=4)
+
+    # Delete all of the FASTA files
+    for fasta in fasta_list:
+        os.remove(fasta)
 
 
 def mash_screen(reference, queryfile, outname):
@@ -92,7 +99,9 @@ def mash2pandas(outname):
     df = df[:10]
 
     # Map the extract_entrez_data function on each accession
+    # df['Organism'] = df[4].map(extract_species) # TODO: use local copy of DB so pinging NCBI isn't necessary
     df['Organism'] = df[4].map(extract_entrez_data)
+
 
     # Print out top hit
     tophit_name = df[4].iloc[0]
@@ -158,6 +167,17 @@ def extract_entrez_data(accession):
 
         print(organism)
         return organism
+
+
+def extract_species(accession):
+    try:
+        df = pd.read_csv('/mnt/nas/Databases/RefSeq/accession_taxonomy_relationships.csv')
+        df_filtered = df[df.values == accession]
+        organism = df_filtered['organism_name'].values[0]
+    except:
+        organism = 'N/A'
+    return organism
+
 
 if __name__ == '__main__':
     strainmash_redmine()
