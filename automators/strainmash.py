@@ -5,7 +5,6 @@ import click
 import pickle
 import shutil
 import pandas as pd
-from Bio import Entrez
 from biotools import mash
 
 
