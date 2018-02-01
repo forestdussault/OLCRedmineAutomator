@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import pickle
 import logging
@@ -11,8 +12,8 @@ def redmine_setup(api_key):
     :param api_key: API key available from your Redmine user account settings. Stored in setup.py.
     :return: instantiated Redmine API object
     """
-    redmine_url = 'http://redmine.biodiversity.agr.gc.ca/'
-    redmine = Redmine(redmine_url, key=api_key)
+    redmine_url = 'https://redmine.biodiversity.agr.gc.ca/'
+    redmine = Redmine(redmine_url, key=api_key, requests={'verify': False})
     return redmine
 
 
@@ -217,11 +218,20 @@ def prepare_automation_command(automation_script, pickles, work_dir):
 
 
 def main():
-    # Config logger to show a timestamp
+    """
+    USAGE:
+    To suppress all irritating SSL warnings:
+        python api.py 2> /dev/null
+
+    To enjoy the wonderful SSL warnings:
+        python api.py
+    """
+
     logging.basicConfig(
         format='\033[92m \033[1m %(asctime)s \033[0m %(message)s ',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S')
+        datefmt='%Y-%m-%d %H:%M:%S',
+        stream=sys.stdout) # Defaults to sys.stderr
 
     # Log into Redmine
     redmine = redmine_setup(API_KEY)
