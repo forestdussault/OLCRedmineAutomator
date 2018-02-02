@@ -176,6 +176,7 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
         # to be made. assinged_to_id to use is 226. Priority is 3 (High).
         redmine_instance.issue.update(resource_id=issue.id,
                                       assigned_to_id=226, priority_id=3,
+                                      subject='WGS Assembly: {}'.format(description[0]), # Add run name to subject
                                       notes='This run has finished assembly! Please add it to the OLC Database.')
 
         # Copy the raw files to the hdfs again, and then we try out the new pipeline.
