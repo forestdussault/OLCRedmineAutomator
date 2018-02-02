@@ -75,7 +75,7 @@ def externalretrieve_redmine(redmine_instance, issue, work_dir, description):
         if len(missing_fastas) > 0:
             redmine_instance.issue.update(resource_id=issue.id,
                                           notes='WARNING: Could not find the following requested FASTA SEQIDs on'
-                                                ' the OLC NAS: {}'.format(missing_fastqs))
+                                                ' the OLC NAS: {}'.format(missing_fastas))
 
         # Now make a zip folder that we'll upload to the FTP.
         shutil.make_archive(root_dir=os.path.join(work_dir, str(issue.id)),
