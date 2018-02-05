@@ -163,6 +163,9 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
         os.system(cmd)
 
         # Upload the results of the sequencing run to Redmine.
+        cmd = 'cp {samplesheet} {reports_folder}'.format(samplesheet=os.path.join(local_wgs_spades_folder, 'SampleSheet.csv'),
+                                                         reports_folder=os.path.join(local_wgs_spades_folder, 'reports'))
+        os.system(cmd)
         shutil.make_archive(os.path.join(work_dir, sequence_folder), 'zip', os.path.join(local_wgs_spades_folder, 'reports'))
         output_list = list()
         output_dict = dict()
