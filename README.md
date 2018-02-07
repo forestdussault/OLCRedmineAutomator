@@ -80,9 +80,14 @@ Then, enter a list of SeqIDs into the Description box. i.e.
 
 ### Internal Notes
 1. Log into the head node (ubuntu@192.168.1.26)
+
 2. Activate the virtual environment (see *requirements.txt*)
-2. Call /mnt/nas/Redmine/OLCRedmineAutomator/api.py
-3. Enjoy Redmine automation
+    - ```source /mnt/nas/Redmine/.virtualenvs/OLCRedmineAutomator/bin/activate```
+
+3. Call automation script
+    - ```python /mnt/nas/Redmine/OLCRedmineAutomator/api.py 2> /dev/null```
+
+4. Enjoy Redmine automation
 
 Running this program requires a *setup.py* file that is not included in
 this repository for security. Here's a censored example of setup.py:
