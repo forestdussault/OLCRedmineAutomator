@@ -13,7 +13,9 @@ def redmine_setup(api_key):
     :return: instantiated Redmine API object
     """
     redmine_url = 'https://redmine.biodiversity.agr.gc.ca/'
-    redmine = Redmine(redmine_url, key=api_key, requests={'verify': False})
+    redmine = Redmine(redmine_url,
+                      key=api_key,
+                      requests={'verify': False})
     return redmine
 
 
@@ -287,12 +289,12 @@ def main():
                                  memory=AUTOMATOR_KEYWORDS[job_type]['memory'])
                 logging.info('----' * 12)
 
-        # Pause for 5 seconds
-        time.sleep(5)
+        # Pause for 30 seconds
+        time.sleep(30)
         monitor_var += 1
 
         # Log a message every 30 minutes
-        if monitor_var >= 360:
+        if monitor_var >= 12:
             logging.info('OLCRedmineAutomator is ACTIVE')
             monitor_var = 0
 
