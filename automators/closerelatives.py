@@ -2,9 +2,7 @@ import os
 import glob
 import click
 import pickle
-from redminelib import Redmine
 from biotools import mash
-from setup import API_KEY
 
 @click.command()
 @click.option('--redmine_instance', help='Path to pickled Redmine API instance')
@@ -13,11 +11,10 @@ from setup import API_KEY
 @click.option('--description', help='Path to pickled Redmine description')
 def closerelatives_redmine(redmine_instance, issue, work_dir, description):
     # Unpickle Redmine objects
-    # redmine_instance = pickle.load(open(redmine_instance, 'rb'))
+    redmine_instance = pickle.load(open(redmine_instance, 'rb'))
     issue = pickle.load(open(issue, 'rb'))
     description = pickle.load(open(description, 'rb'))
-    redmine_url = 'https://redmine.biodiversity.agr.gc.ca/'
-    redmine_instance = Redmine(redmine_url, key=API_KEY, requests={'verify': False})
+
     try:
         # First line of description should be number of close relatives desired.
         try:
