@@ -76,7 +76,7 @@ def strainmash_redmine(redmine_instance, issue, work_dir, description):
     redmine_instance.issue.update(resource_id=issue.id,
                                   uploads=output_list,
                                   status_id=4,
-                                  notes='StrainMash complete. See attached file for results.')
+                                  notes='STRAINMASH complete. See attached file for results.')
 
     # Delete all of the FASTA files
     for fasta in fasta_list:
