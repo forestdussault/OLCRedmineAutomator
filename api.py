@@ -4,18 +4,21 @@ import time
 import pickle
 import logging
 from redminelib import Redmine
-from setup import AUTOMATOR_KEYWORDS, API_KEY, BIO_REQUESTS_DIR
+from settings import AUTOMATOR_KEYWORDS, API_KEY, BIO_REQUESTS_DIR
 
 
 def redmine_setup(api_key):
     """
-    :param api_key: API key available from your Redmine user account settings. Stored in setup.py.
+    :param api_key: API key available from your Redmine user account settings. Stored in settings.py.
     :return: instantiated Redmine API object
     """
     redmine_url = 'https://redmine.biodiversity.agr.gc.ca/'
     redmine = Redmine(redmine_url,
                       key=api_key,
-                      requests={'verify': False})
+                      requests={
+                          'verify': False,
+                          'timeout':10,
+                      })
     return redmine
 
 
