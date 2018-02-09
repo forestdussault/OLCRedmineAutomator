@@ -26,6 +26,10 @@ to the OLC Slurm cluster for each respective job type is also displayed.
 
 
 ### Tool Descriptions (Work in progress)
+Unless otherwise stated, the **Usage** section of each tool description
+provides an example of the input to provide in a newly created Redmine
+issue's description field. The name of the requested tool must be
+specified in the subject line of the issue.
 
 #### Strainmash
 **Description:** Reads a list of SeqIDs from a Redmine issue and calls Mash for each against a sketch of the entire GenBank strain database (Up to date as of Dec. 01, 2017). Returns a formatted Mash.screen output file per SeqID.
@@ -41,9 +45,17 @@ Then, enter a list of SeqIDs into the Description box. i.e.
 
 ---
 #### Diversitree
-**Description:**
+**Description:** Takes an integer *n* and a list of SeqIDs from a Redmine issue.
+This program will select the *n* most representative strains from the given list of SeqIDs.
 
 **Usage:**
+```
+2
+2017-SEQ-0918
+2017-SEQ-0919
+2017-SEQ-0920
+2017-SEQ-0921
+```
 
 ---
 #### AutoCLARK
@@ -59,9 +71,16 @@ Then, enter a list of SeqIDs into the Description box. i.e.
 
 ---
 #### PlasmidExtractor
-**Description:**
+**Description:** Takes a list of SeqIDs and runs PlasmidExtractor on each sample.
+For details on the method, see __https://lowandrew.github.io/Plasmid_Assembler/__
 
 **Usage:**
+```
+2017-SEQ-0918
+2017-SEQ-0919
+2017-SEQ-0920
+2017-SEQ-0921
+```
 
 ---
 #### WGSAssembly
@@ -81,7 +100,7 @@ Then, enter a list of SeqIDs into the Description box. i.e.
 ### Internal Notes
 1. Log into the head node (ubuntu@192.168.1.26)
 
-2. Activate the virtual environment (see *requirements.txt*)
+2. Activate the virtual environment
     - ```source /mnt/nas/Redmine/.virtualenvs/OLCRedmineAutomator/bin/activate```
 
 3. Call automation script
@@ -89,7 +108,7 @@ Then, enter a list of SeqIDs into the Description box. i.e.
 
 4. Enjoy Redmine automation
 
-Running this program requires a *setup.py* file that is not included in
+Running this program requires a *settings.py* file that is not included in
 this repository for security. Here's a censored example of setup.py:
 
 ```
