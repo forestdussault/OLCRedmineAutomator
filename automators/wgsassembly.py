@@ -6,9 +6,10 @@ import click
 import pickle
 import shutil
 import fnmatch
-from ftplib import FTP
 import xml.etree.ElementTree as et
-from setup import FTP_USERNAME, FTP_PASSWORD
+
+from ftplib import FTP
+from .automator_settings import FTP_USERNAME, FTP_PASSWORD
 
 
 @click.command()
