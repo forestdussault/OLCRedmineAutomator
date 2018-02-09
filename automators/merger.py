@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import sys
+
 from glob import glob
 from accessoryFunctions.accessoryFunctions import *
 __author__ = 'adamkoziol'

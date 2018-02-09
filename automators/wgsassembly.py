@@ -9,7 +9,7 @@ import fnmatch
 import xml.etree.ElementTree as et
 
 from ftplib import FTP
-from .automator_settings import FTP_USERNAME, FTP_PASSWORD
+from automator_settings import FTP_USERNAME, FTP_PASSWORD
 
 
 @click.command()
