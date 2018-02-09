@@ -32,7 +32,10 @@ issue's description field. The name of the requested tool must be
 specified in the subject line of the issue.
 
 #### Strainmash
-**Description:** Reads a list of SeqIDs from a Redmine issue and calls Mash for each against a sketch of the entire GenBank strain database (Up to date as of Dec. 01, 2017). Returns a formatted Mash.screen output file per SeqID.
+**Description:** Reads a list of SeqIDs from a Redmine issue and
+calls Mash for each against a sketch of the entire GenBank
+strain database (Up to date as of Dec. 01, 2017).
+Returns a formatted Mash.screen output file per SeqID.
 
 **Usage:** Set your Redmine issue topic to 'Strainmash'.
 Then, enter a list of SeqIDs into the Description box. i.e.
