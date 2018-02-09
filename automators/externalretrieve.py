@@ -4,7 +4,7 @@ import click
 import ftplib
 import pickle
 import shutil
-from setup import FTP_USERNAME, FTP_PASSWORD
+from .automator_settings import FTP_USERNAME, FTP_PASSWORD
 
 
 @click.command()
