@@ -4,6 +4,7 @@ import click
 import pickle
 from biotools import mash
 
+
 @click.command()
 @click.option('--redmine_instance', help='Path to pickled Redmine API instance')
 @click.option('--issue', help='Path to pickled Redmine issue')
@@ -34,8 +35,9 @@ def closerelatives_redmine(redmine_instance, issue, work_dir, description):
         with open(os.path.join(work_dir, 'seqid.txt'), 'w') as f:
             f.write(seqid)
 
-        cmd = 'python2 /mnt/nas/MiSeq_Backup/file_linker.py {seqidlist} {workdir}'.format(seqidlist=os.path.join(work_dir, 'seqid.txt'),
-                                                                                          workdir=work_dir)
+        cmd = 'python2 /mnt/nas/MiSeq_Backup/file_linker.py ' \
+              '{seqidlist} ' \
+              '{workdir}'.format(seqidlist=os.path.join(work_dir, 'seqid.txt'), workdir=work_dir)
         os.system(cmd)
         if len(glob.glob(os.path.join(work_dir, '*.fastq.gz'))) != 2:
             redmine_instance.issue.update(resource_id=issue.id,
@@ -72,9 +74,10 @@ def closerelatives_redmine(redmine_instance, issue, work_dir, description):
         # Post the list of closely related SEQIDs to redmine.
         redmine_instance.issue.update(resource_id=issue.id,
                                       notes='Process complete! Here is the list of the {num_relatives} closest strains '
-                                            'to {query_strain}:\n{upload_string}'.format(num_relatives=str(num_close_relatives),
-                                                                                         query_strain=seqid,
-                                                                                         upload_string=upload_string),
+                                            'to {query_strain}:'
+                                            '\n{upload_string}'.format(num_relatives=str(num_close_relatives),
+                                                                       query_strain=seqid,
+                                                                       upload_string=upload_string),
                                       status_id=4)
     except Exception as e:
         redmine_instance.issue.update(resource_id=issue.id,
