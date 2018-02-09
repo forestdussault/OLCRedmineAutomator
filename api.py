@@ -294,10 +294,10 @@ def main():
 
         # Pause for 30 seconds
         time.sleep(30)
-        monitor_var += 1
+        monitor_var += 0.5
 
         # Log a message every 30 minutes
-        if monitor_var >= 12:
+        if monitor_var >= 30:
             logging.info('OLCRedmineAutomator is ACTIVE')
             monitor_var = 0
 
