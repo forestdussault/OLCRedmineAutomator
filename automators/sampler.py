@@ -134,7 +134,7 @@ def main(args):
     # Create a copy of the tree that parsnp won't complain about.
     make_ref(reference_file, os.path.join(tmpdir, 'reference.fasta'))
     # Run PARSNP on everything to make a tree that we'll get to parsing to determine which species are far apart.
-    cmd = 'parsnp -r {tmpdir}/reference.fasta -d {input} -c -o {output} -p {threads}'.format(tmpdir=tmpdir,
+    cmd = '/mnt/nas/Programs/Parsnp-Linux64-v1.2/parsnp -r {tmpdir}/reference.fasta -d {input} -c -o {output} -p {threads}'.format(tmpdir=tmpdir,
                                                                                           threads=str(args.num_threads),
                                                                                              output=args.output_dir,
                                                                                              input=args.input_dir)
