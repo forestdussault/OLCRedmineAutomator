@@ -102,7 +102,7 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
 
         # Now check that the SEQIDs from the SampleSheet don't already exist on the OLC NAS.
         samplesheet_seqids = get_seqids_from_samplesheet(os.path.join(work_dir, sequence_folder, 'SampleSheet.csv'))
-        shutil.rmtree(work_dir, sequence_folder)
+        shutil.rmtree(os.path.join(work_dir, sequence_folder))
         duplicate_fastqs = check_for_fastq_on_nas(samplesheet_seqids)
         if len(duplicate_fastqs) > 0:
             redmine_instance.issue.update(resource_id=issue.id, status_id=4,
