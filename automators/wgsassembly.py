@@ -10,7 +10,7 @@ import xml.etree.ElementTree as et
 
 from ftplib import FTP
 from automator_settings import FTP_USERNAME, FTP_PASSWORD
-
+import traceback
 
 @click.command()
 @click.option('--redmine_instance', help='Path to pickled Redmine API instance')
@@ -75,13 +75,13 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
             validation = False
 
         # Now, download the info sheets (to a temporary folder) and make sure that SEQIDs that are present are good to go.
-        if not os.path.isdir(sequence_folder):
-            os.makedirs(sequence_folder)
-        download_info_sheets(sequence_folder)
+        if not os.path.isdir(os.path.join(work_dir, sequence_folder)):
+            os.makedirs(os.path.join(work_dir, sequence_folder))
+        download_info_sheets(sequence_folder, os.path.join(work_dir, sequence_folder))
         if 'SampleSheet.csv' in missing_files:
             return
         else:
-            samplesheet_seqids = get_seqids_from_samplesheet(os.path.join(sequence_folder, 'SampleSheet.csv'))
+            samplesheet_seqids = get_seqids_from_samplesheet(os.path.join(work_dir, sequence_folder, 'SampleSheet.csv'))
             missing_seqids = ensure_samples_are_present(samplesheet_seqids, sequence_folder)
             if len(missing_seqids) > 0:
                 redmine_instance.issue.update(resource_id=issue.id, status_id=4,
@@ -91,8 +91,8 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
                 validation = False
 
         if 'GenerateFASTQRunStatistics.xml' not in missing_files:
-            samplesheet_seqids = get_seqids_from_samplesheet(os.path.join(sequence_folder, 'SampleSheet.csv'))
-            missing_seqids = validate_fastq_run_stats(samplesheet_seqids, sequence_folder)
+            samplesheet_seqids = get_seqids_from_samplesheet(os.path.join(work_dir, sequence_folder, 'SampleSheet.csv'))
+            missing_seqids = validate_fastq_run_stats(samplesheet_seqids, os.path.join(work_dir, sequence_folder))
             if len(missing_seqids) > 0:
                 redmine_instance.issue.update(resource_id=issue.id, status_id=4,
                                               notes='ERROR: The following SEQIDs from SampleSheet.csv could not'
@@ -101,8 +101,8 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
                 validation = False
 
         # Now check that the SEQIDs from the SampleSheet don't already exist on the OLC NAS.
-        samplesheet_seqids = get_seqids_from_samplesheet(os.path.join(sequence_folder, 'SampleSheet.csv'))
-        shutil.rmtree(sequence_folder)
+        samplesheet_seqids = get_seqids_from_samplesheet(os.path.join(work_dir, sequence_folder, 'SampleSheet.csv'))
+        shutil.rmtree(work_dir, sequence_folder)
         duplicate_fastqs = check_for_fastq_on_nas(samplesheet_seqids)
         if len(duplicate_fastqs) > 0:
             redmine_instance.issue.update(resource_id=issue.id, status_id=4,
@@ -205,6 +205,7 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
         redmine_instance.issue.update(resource_id=issue.id,
                                       notes='Something went wrong! Send this error traceback to your friendly '
                                             'neighborhood bioinformatician: {}'.format(e))
+        print(traceback.print_exc())
 
 
 def check_if_file(file_name, ftp_dir):
@@ -322,13 +323,13 @@ def validate_files(file_name):
     return missing_files
 
 
-def download_info_sheets(sequence_folder):
+def download_info_sheets(sequence_folder, local_folder):
     ftp = FTP('ftp.agr.gc.ca', user=FTP_USERNAME, passwd=FTP_PASSWORD)
     ftp.cwd(os.path.join('incoming/cfia-ak', sequence_folder))
     info_sheets = ['SampleSheet.csv', 'RunInfo.xml', 'GenerateFASTQRunStatistics.xml']
     for sheet in info_sheets:
         try:
-            f = open(os.path.join(sequence_folder, sheet), 'wb')
+            f = open(os.path.join(local_folder, sheet), 'wb')
             ftp.retrbinary('RETR ' + sheet, f.write)
             f.close()
         except:
