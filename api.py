@@ -246,9 +246,6 @@ def main():
     logging.info('## The OLCRedmineAutomator is now operational ##')
     logging.info('####' * 12)
 
-    # Variable for counting while loop interations
-    monitor_var = 0
-
     # Continually monitor for new jobs
     while True:
         # Grab all issues belonging to CFIA
@@ -294,12 +291,6 @@ def main():
 
         # Pause for 30 seconds
         time.sleep(30)
-        monitor_var += 0.5
-
-        # Log a message every three hours
-        if monitor_var >= 60*3:
-            logging.info('OLCRedmineAutomator is ACTIVE')
-            monitor_var = 0
 
 
 if __name__ == '__main__':
