@@ -24,7 +24,7 @@ def merge_redmine(redmine_instance, issue, work_dir, description):
         # out a better way to do it.
         redmine_instance.issue.update(resource_id=issue.id,
                                       notes='Started merging...')
-        attachment = redmine_instance.get(issue.id, include='attachments')
+        attachment = redmine_instance.issue.get(issue.id, include='attachments')
         attachment_id = 0
         for item in attachment.attachments:
             attachment_id = item.id
