@@ -133,3 +133,7 @@ def generate_seqid_list(mergefile):
         for item in row.split(';'):
             seqid_list.append(item)
     return seqid_list
+
+
+if __name__ == '__main__':
+    merge_redmine()
