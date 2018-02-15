@@ -49,12 +49,12 @@ def diversitree_redmine(redmine_instance, issue, work_dir, description):
             for fasta in bad_fastas:
                 fasta = os.path.split(fasta)[-1]
                 outstr += fasta + '\n'
-                redmine_instance.issue.update(resource_id=issue.id,
-                                              notes='Warning! MASH screening thinks that the following samples may be too'
-                                                    ' far from the reference: {samples}\nIn this case, the refence file'
-                                                    ' was {reference}. You may want to create a new issue and '
-                                                    'try again.'.format(samples=outstr,
-                                                                        reference=os.path.split(reference_file)[-1]))
+            redmine_instance.issue.update(resource_id=issue.id,
+                                          notes='Warning! MASH screening thinks that the following samples may be too'
+                                                ' far from the reference: {samples}\nIn this case, the reference file'
+                                                ' was {reference}. You may want to create a new issue and '
+                                                'try again.'.format(samples=outstr,
+                                                                    reference=os.path.split(reference_file)[-1]))
 
         cmd = 'python /mnt/nas/Redmine/OLCRedmineAutomator/automators/sampler.py -i {work_dir} ' \
               '-d {desired_tips} -o {output}'.format(work_dir=work_dir,
