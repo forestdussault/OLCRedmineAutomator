@@ -82,7 +82,7 @@ class Merger(object):
                 # will be entered into the list. Skip them
                 if ids:
                     # Glob for files in the path with the seq ID and 'fastq'
-                    idfile = glob('{}{}*fastq*'.format(self.path, ids))
+                    idfile = glob.glob('{}{}*fastq*'.format(self.path, ids))
                     # Assertion to ensure that all the files specified in :self.idfile are present in the path
                     assert idfile, 'Cannot find files for seq ID: {}. Please check that the seqIDs ' \
                                    'provided in the seq ID file match the files present in the path'.format(ids)
