@@ -242,9 +242,9 @@ def main():
     redmine = redmine_setup(API_KEY)
 
     # Greetings
-    logging.info('####' * 12)
-    logging.info('## The OLCRedmineAutomator is now operational ##')
-    logging.info('####' * 12)
+    logging.info('####' * 13)
+    logging.info('## The OLCRedmineAutomator-DEV is now operational ##')
+    logging.info('####' * 13)
 
     # Continually monitor for new jobs
     while True:
