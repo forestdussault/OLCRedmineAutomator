@@ -7,12 +7,11 @@ from redminelib import Redmine
 from settings import AUTOMATOR_KEYWORDS, API_KEY, BIO_REQUESTS_DIR
 
 
-def redmine_setup(api_key):
+def redmine_setup(api_key, redmine_url):
     """
     :param api_key: API key available from your Redmine user account settings. Stored in settings.py.
     :return: instantiated Redmine API object
     """
-    redmine_url = 'https://redmine.biodiversity.agr.gc.ca/'
     redmine = Redmine(redmine_url,
                       key=api_key,
                       requests={
@@ -22,12 +21,12 @@ def redmine_setup(api_key):
     return redmine
 
 
-def retrieve_issues(redmine_instance):
+def retrieve_issues(redmine_instance, project_id):
     """
     :param redmine_instance: instantiated Redmine API object
     :return: returns an object containing all issues for OLC CFIA (http://redmine.biodiversity.agr.gc.ca/projects/cfia/)
     """
-    issues = redmine_instance.issue.filter(project_id='cfia')
+    issues = redmine_instance.issue.filter(project_id=project_id)
     return issues
 
 
@@ -239,7 +238,8 @@ def main():
         stream=sys.stdout) # Defaults to sys.stderr
 
     # Log into Redmine
-    redmine = redmine_setup(API_KEY)
+    redmine = redmine_setup(api_key=API_KEY,
+                            redmine_url='https://redmine.biodiversity.agr.gc.ca/')
 
     # Greetings
     logging.info('####' * 12)
@@ -249,7 +249,7 @@ def main():
     # Continually monitor for new jobs
     while True:
         # Grab all issues belonging to CFIA
-        issues = retrieve_issues(redmine)
+        issues = retrieve_issues(redmine_instance=redmine, project_id='cfia')
 
         # Pull any new automation job requests from issues
         new_jobs = new_automation_jobs(issues)
