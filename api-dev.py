@@ -4,30 +4,29 @@ import time
 import pickle
 import logging
 from redminelib import Redmine
-from settingsdev import AUTOMATOR_KEYWORDS, API_KEY, BIO_REQUESTS_DIR
+from settings import AUTOMATOR_KEYWORDS, API_KEY, BIO_REQUESTS_DIR
 
 
-def redmine_setup(api_key):
+def redmine_setup(api_key, redmine_url):
     """
     :param api_key: API key available from your Redmine user account settings. Stored in settings.py.
     :return: instantiated Redmine API object
     """
-    redmine_url = 'http://192.168.1.2:8080'
     redmine = Redmine(redmine_url,
                       key=api_key,
                       requests={
                           'verify': False,
-                          'timeout': 10,
+                          'timeout':10,
                       })
     return redmine
 
 
-def retrieve_issues(redmine_instance):
+def retrieve_issues(redmine_instance, project_id):
     """
     :param redmine_instance: instantiated Redmine API object
-    :return: returns an object containing all issues for the test Redmine environment
+    :return: returns an object containing all issues for OLC CFIA (http://redmine.biodiversity.agr.gc.ca/projects/cfia/)
     """
-    issues = redmine_instance.issue.filter(project_id='test')
+    issues = redmine_instance.issue.filter(project_id=project_id)
     return issues
 
 
@@ -206,7 +205,7 @@ def prepare_automation_command(automation_script, pickles, work_dir):
     :return: string of completed command to pass to automation script
     """
     # Get path to script responsible for running automation job
-    automation_script_path = os.path.join(os.path.dirname(__file__), 'automators-dev', automation_script)
+    automation_script_path = os.path.join(os.path.dirname(__file__), 'automators', automation_script)
 
     # Prepare command
     cmd = 'python ' \
@@ -239,17 +238,18 @@ def main():
         stream=sys.stdout) # Defaults to sys.stderr
 
     # Log into Redmine
-    redmine = redmine_setup(API_KEY)
+    redmine = redmine_setup(api_key=API_KEY,
+                            redmine_url='https://redmine.biodiversity.agr.gc.ca/')
 
     # Greetings
-    logging.info('####' * 13)
-    logging.info('## The OLCRedmineAutomator-DEV is now operational ##')
-    logging.info('####' * 13)
+    logging.info('####' * 12)
+    logging.info('## The OLCRedmineAutomator is now operational ##')
+    logging.info('####' * 12)
 
     # Continually monitor for new jobs
     while True:
         # Grab all issues belonging to CFIA
-        issues = retrieve_issues(redmine)
+        issues = retrieve_issues(redmine_instance=redmine, project_id='cfia')
 
         # Pull any new automation job requests from issues
         new_jobs = new_automation_jobs(issues)
@@ -289,8 +289,8 @@ def main():
                                  memory=AUTOMATOR_KEYWORDS[job_type]['memory'])
                 logging.info('----' * 12)
 
-        # Pause for 30 seconds
-        time.sleep(30)
+        # Pause for 5 seconds
+        time.sleep(5)
 
 
 if __name__ == '__main__':
