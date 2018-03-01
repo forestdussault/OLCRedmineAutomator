@@ -17,6 +17,8 @@ def diversitree_redmine(redmine_instance, issue, work_dir, description):
     description = pickle.load(open(description, 'rb'))
 
     try:
+        if not os.path.isdir(os.path.join(work_dir, 'fastas')):
+            os.makedirs(os.path.join(work_dir, 'fastas'))
         # Check that the first line of the request is a number. If it isn't, tell author they goofed and give up.
         try:
             desired_num_strains = int(description[0])
@@ -38,12 +40,12 @@ def diversitree_redmine(redmine_instance, issue, work_dir, description):
                 f.write(seqid + '\n')
 
         # Drop FASTA files into workdir
-        cmd = 'python2 /mnt/nas/WGSspades/file_extractor.py {0}/seqid.txt {0} /mnt/nas/'.format(work_dir)
+        cmd = 'python2 /mnt/nas/WGSspades/file_extractor.py {0}/seqid.txt {0}/fastas /mnt/nas/'.format(work_dir)
         os.system(cmd)
 
         # Run a mash to figure out if any strains are particularly far apart and likely to make PARSNP fail.
-        reference_file = glob.glob(os.path.join(work_dir, '*.fasta'))[0]
-        bad_fastas = check_distances(reference_file, work_dir)
+        reference_file = glob.glob(os.path.join(work_dir, 'fastas', '*.fasta'))[0]
+        bad_fastas = check_distances(reference_file, os.path.join(work_dir, 'fastas'))
         if bad_fastas:
             outstr = ''
             for fasta in bad_fastas:
@@ -57,7 +59,7 @@ def diversitree_redmine(redmine_instance, issue, work_dir, description):
                                                                     reference=os.path.split(reference_file)[-1]))
 
         cmd = 'python /mnt/nas/Redmine/OLCRedmineAutomator/automators/sampler.py -i {work_dir} ' \
-              '-d {desired_tips} -o {output}'.format(work_dir=work_dir,
+              '-d {desired_tips} -o {output}'.format(work_dir=os.path.join(work_dir, 'fastas'),
                                                      desired_tips=desired_num_strains,
                                                      output=os.path.join(work_dir, 'output'))
         os.system(cmd)
