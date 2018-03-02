@@ -242,9 +242,7 @@ def main():
                             redmine_url='https://redmine.biodiversity.agr.gc.ca/')
 
     # Greetings
-    logging.info('####' * 12)
-    logging.info('## The OLCRedmineAutomator is now operational ##')
-    logging.info('####' * 12)
+    logging.info('OLCRedmineAutomator is actively monitoring for new jobs')
 
     # Continually monitor for new jobs
     while True:
