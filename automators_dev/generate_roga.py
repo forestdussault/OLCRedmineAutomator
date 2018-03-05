@@ -1,14 +1,16 @@
 # begin-doc-include
 
-from pylatex.utils import italic, bold
-from datetime import datetime
-from automators_dev.AutoROGAV2.database import update_db
-import automators_dev.AutoROGAV2.extract_report_data as extract_report_data
-import pylatex as pl
-import pickle
-import click
 import os
+import pickle
 import re
+from datetime import datetime
+
+import automators_dev.AutoROGAV2.autoroga_extract_report_data as extract_report_data
+import click
+import pylatex as pl
+from pylatex.utils import bold, italic
+
+from automators_dev.autoroga_database import update_db
 
 # TODO: GDCS + GenomeQAML combined metric. Everything must pass in order to be listed as 'PASS'
 """

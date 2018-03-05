@@ -1,5 +1,6 @@
 import sqlalchemy as sa
-from automators_dev.AutoROGAV2.postgres_settings import POSTGRES_PASSWORD, POSTGRES_USERNAME
+
+from automators_dev.postgres_settings import POSTGRES_PASSWORD, POSTGRES_USERNAME
 
 
 def connect(user, password, db, host='localhost', port=5432):
