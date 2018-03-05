@@ -1,15 +1,14 @@
 # begin-doc-include
 
 import os
-import pickle
 import re
-from datetime import datetime
-
-import automators_dev.autoroga_extract_report_data as extract_report_data
 import click
+import pickle
 import pylatex as pl
-from pylatex.utils import bold, italic
+import automators_dev.autoroga_extract_report_data as extract_report_data
 
+from datetime import datetime
+from pylatex.utils import bold, italic
 from automators_dev.autoroga_database import update_db
 
 # TODO: GDCS + GenomeQAML combined metric. Everything must pass in order to be listed as 'PASS'
@@ -222,7 +221,8 @@ def generate_roga(seq_list, genus, lab, source):
         # TEXT SUMMARY
         with doc.create(pl.Subsection('Identification Summary', numbering=False)) as summary:
 
-            summary.append('Whole-genome sequencing analysis was conducted on {} presumptive '.format(len(metadata_reports)))
+            summary.append('Whole-genome sequencing analysis was conducted on '
+                           '{} presumptive '.format(len(metadata_reports)))
             summary.append(italic('{} '.format(genus)))
 
             if len(metadata_reports) == 1:
@@ -499,7 +499,6 @@ def generate_roga(seq_list, genus, lab, source):
                                                "height=0.3in"],
                                       arguments=''))
 
-
     pdf_file = '{}_{}_{}'.format(report_id, genus, date)
     doc.generate_pdf(pdf_file, clean_tex=False)
 
@@ -566,8 +565,6 @@ class Form(pl.base_classes.Environment):
     packages = [pl.Package('hyperref')]
     escape = False
     content_separator = "\n"
-
-
 
 
 if __name__ == '__main__':
