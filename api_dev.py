@@ -4,7 +4,7 @@ import time
 import pickle
 import logging
 from redminelib import Redmine
-from settingsdev import AUTOMATOR_KEYWORDS, API_KEY, BIO_REQUESTS_DIR
+from settings_dev import AUTOMATOR_KEYWORDS, API_KEY, BIO_REQUESTS_DIR
 
 
 def redmine_setup(api_key):
