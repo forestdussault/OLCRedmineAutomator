@@ -23,7 +23,8 @@ def update_db(date, year, genus, lab, source):
 
     try:
         autoroga_project_table = sa.Table('autoroga_project_table', meta,
-                                          sa.Column('roga_id', sa.INTEGER, ROGA_ID_SEQ, primary_key=True, server_default=ROGA_ID_SEQ.next_value()),
+                                          sa.Column('roga_id', sa.INTEGER, ROGA_ID_SEQ,
+                                                    primary_key=True, server_default=ROGA_ID_SEQ.next_value()),
                                           sa.Column('genus', sa.String(64)),
                                           sa.Column('lab', sa.String(16)),
                                           sa.Column('source', sa.String(64)),
