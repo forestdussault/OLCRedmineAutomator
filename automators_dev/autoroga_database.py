@@ -1,16 +1,16 @@
 import sqlalchemy as sa
 
-from automators_dev.postgres_settings import POSTGRES_PASSWORD, POSTGRES_USERNAME
+from automators_dev.automator_settings import POSTGRES_PASSWORD, POSTGRES_USERNAME
 
 
 def connect(user, password, db, host='localhost', port=5432):
     url = 'postgresql://{}:{}@{}:{}/{}'
     url = url.format(user, password, host, port, db)
 
-    # The return value of create_engine() is our connection object
+    # The return value of create_engine() is the connection object
     con = sa.create_engine(url, client_encoding='utf8')
 
-    # We then bind the connection to MetaData()
+    # Bind the connection to MetaData()
     meta = sa.MetaData(bind=con, reflect=True)
 
     return con, meta
