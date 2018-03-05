@@ -1,6 +1,6 @@
 # Created by .ignore support plugin (hsz.mobi)
-/automators_dev/AutoROGAV2/postgres_settings.py
+/automators_dev/postgres_settings.py
 /automators/automator_settings.py
 /settings.py
-/settingsdev.py
+/settings_dev.py
 /automators_dev/automator_settings.py
