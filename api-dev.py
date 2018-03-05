@@ -9,7 +9,7 @@ from settingsdev import AUTOMATOR_KEYWORDS, API_KEY, BIO_REQUESTS_DIR
 
 def redmine_setup(api_key):
     """
-    :param api_key: API key available from your Redmine user account settings. Stored in settings.py.
+    :param api_key: API key available from your Redmine user account settings. Stored in postgres_settings.py.
     :return: instantiated Redmine API object
     """
     redmine_url = 'http://192.168.1.2:8080'
@@ -206,7 +206,7 @@ def prepare_automation_command(automation_script, pickles, work_dir):
     :return: string of completed command to pass to automation script
     """
     # Get path to script responsible for running automation job
-    automation_script_path = os.path.join(os.path.dirname(__file__), 'automators-dev', automation_script)
+    automation_script_path = os.path.join(os.path.dirname(__file__), 'automators_dev', automation_script)
 
     # Prepare command
     cmd = 'python ' \
