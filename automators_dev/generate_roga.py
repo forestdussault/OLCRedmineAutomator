@@ -5,7 +5,7 @@ import pickle
 import re
 from datetime import datetime
 
-import automators_dev.AutoROGAV2.autoroga_extract_report_data as extract_report_data
+import automators_dev.autoroga_extract_report_data as extract_report_data
 import click
 import pylatex as pl
 from pylatex.utils import bold, italic
@@ -64,7 +64,7 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
         quit()
 
     # Parse source
-    source = description[1]
+    source = description[1].lower()
     if len(source.split('-')) > 2:
         redmine_instance.issue.update(resource_id=issue.id,
                                       notes='ERROR: Invalid source provided. '
