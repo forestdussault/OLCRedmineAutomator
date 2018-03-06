@@ -98,7 +98,9 @@ def externalretrieve_redmine(redmine_instance, issue, work_dir, description):
             pass
 
         redmine_instance.issue.update(resource_id=issue.id, status_id=4,
-                                      notes='External Retrieve process complete!')
+                                      notes='External Retrieve process complete!\n\n'
+                                            'Results are available at the following FTP address:\n'
+                                            'ftp://ftp.agr.gc.ca/outgoing/cfia-ak/{}'.format(str(issue.id) + '.zip'))
     except Exception as e:
         redmine_instance.issue.update(resource_id=issue.id,
                                       notes='Something went wrong! Send this error traceback to your friendly '
