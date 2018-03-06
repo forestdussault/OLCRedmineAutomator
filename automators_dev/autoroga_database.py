@@ -1,9 +1,9 @@
 import sqlalchemy as sa
 
-from automators_dev.automator_settings import POSTGRES_PASSWORD, POSTGRES_USERNAME
+from automator_settings import POSTGRES_PASSWORD, POSTGRES_USERNAME
 
 
-def connect(user, password, db, host='localhost', port=5432):
+def connect(user, password, db, host='192.168.1.5', port=5432):
     url = 'postgresql://{}:{}@{}:{}/{}'
     url = url.format(user, password, host, port, db)
 
@@ -39,7 +39,11 @@ def update_db(date, year, genus, lab, source):
     # Grab what the next key value will be
     select_next_value = sa.select([autoroga_project_table.c.roga_id])
     keys = con.execute(select_next_value)
-    next_val = max(keys)[0] + 1
+
+    try:
+        next_val = max(keys)[0] + 1
+    except:
+        next_val = 1
 
     # Insert new row into table
     ins = autoroga_project_table.insert().values(genus=genus, date=date, lab=lab, source=source)

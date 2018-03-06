@@ -16,7 +16,13 @@ def create_report_dictionary(report_list, seq_list, id_column):
     for report in report_list:
         # Check if the sample we want is in file
         df = pd.read_csv(report)
-        samples = df[id_column]
+
+        # Accomodating old reports coming up
+        try:
+            samples = df[id_column]
+        except KeyError:
+            samples = df['SampleName']
+
         # Check all of our sequences of interest to see if they are in the combinedMetadata file
         for seq in seq_list:
             if seq in samples.values:

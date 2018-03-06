@@ -5,11 +5,11 @@ import re
 import click
 import pickle
 import pylatex as pl
-import automators_dev.autoroga_extract_report_data as extract_report_data
+import autoroga_extract_report_data as extract_report_data
 
 from datetime import datetime
 from pylatex.utils import bold, italic
-from automators_dev.autoroga_database import update_db
+from autoroga_database import update_db
 
 # TODO: GDCS + GenomeQAML combined metric. Everything must pass in order to be listed as 'PASS'
 """
@@ -56,7 +56,7 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
     lab = description[0]
     if lab not in lab_info:
         valid_labs = str([x for x, y in lab_info.items()])
-        redmine_instance.issue.update(resource_id=issue.id,
+        redmine_instance.issue.update(resource_id=issue.id, status_id=3,
                                       notes='ERROR: Invalid Lab ID provided. Please ensure the first line of your '
                                             'Redmine description specifies one of the following labs:\n'
                                             '{}'.format(valid_labs))
@@ -65,7 +65,7 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
     # Parse source
     source = description[1].lower()
     if len(source.split('-')) > 2:
-        redmine_instance.issue.update(resource_id=issue.id,
+        redmine_instance.issue.update(resource_id=issue.id, status_id=3,
                                       notes='ERROR: Invalid source provided. '
                                             'Line 2 of the Redmine description must be a valid string e.g. "flour"')
         quit()
@@ -73,7 +73,8 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
     # Parse genus
     genus = description[2].capitalize()
     if genus not in ['Escherichia', 'Salmonella', 'Listeria']:
-        redmine_instance.issue.update(resource_id=issue.id, notes='ERROR: Input genus "{}" does not match any of the '
+        redmine_instance.issue.update(resource_id=issue.id, status_id=3,
+                                      notes='ERROR: Input genus "{}" does not match any of the '
                                                                   'acceptable values which include: '
                                                                   '"Escherichia", "Salmonella", "Listeria"'
                                                                   ''.format(genus))
@@ -82,21 +83,39 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
     # Parse seq IDs
     seqids = list()
     for item in description[3:]:
-        item = item.upper()
-        seqids.append(item)
+        item = item.upper().strip()
+        if item != '':
+            seqids.append(item)
     seqids = tuple(seqids)
 
+    print('LAB: %s' % lab)
+    print('SOURCE: %s' % source)
+    print('GENUS: %s' % genus)
+    print('SEQIDS: %s' % str(seqids))
+
     # Validate Seq IDS
-    validated_list = extract_report_data.generate_validated_list(seq_list=seqids, genus=genus)
+    validated_list = []
+    try:
+        validated_list = extract_report_data.generate_validated_list(seq_list=seqids, genus=genus)
+    except KeyError as e:
+        redmine_instance.issue.update(resource_id=issue.id, status_id=3,
+                                      notes='ERROR: Could not find one or more of the provided Seq IDs.\n'
+                                            'TRACEBACK: {}'.format(e))
+        quit()
+
 
     if len(validated_list) == 0:
-        redmine_instance.issue.update(resource_id=issue.id,
+        redmine_instance.issue.update(resource_id=issue.id, status_id=3,
                                       notes='ERROR: No samples provided matched the expected genus '
                                             '"{}"'.format(genus.upper()))
         quit()
 
     # GENERATE REPORT
-    pdf_file = generate_roga(seq_list=validated_list, genus=genus, lab=lab, source=source)
+    pdf_file = generate_roga(seq_list=validated_list,
+                             genus=genus,
+                             lab=lab,
+                             source=source,
+                             work_dir=work_dir)
 
     # Output list containing dictionaries with file path as the key
     output_list = [
@@ -107,10 +126,11 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
     ]
 
     redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=4,
-                                  notes='Generated ROGA successfully')
+                                  notes='Generated ROGA successfully. Completed PDF report is attached.')
 
 
-def generate_roga(seq_list, genus, lab, source):
+
+def generate_roga(seq_list, genus, lab, source, work_dir):
     """
     Generates PDF ROGA
     :param seq_list: List of OLC Seq IDs
@@ -499,8 +519,10 @@ def generate_roga(seq_list, genus, lab, source):
                                                "height=0.3in"],
                                       arguments=''))
 
-    pdf_file = '{}_{}_{}'.format(report_id, genus, date)
+    pdf_file = os.path.join(work_dir, '{}_{}_{}'.format(report_id, genus, date))
     doc.generate_pdf(pdf_file, clean_tex=False)
+
+    pdf_file += '.pdf'
 
     return pdf_file
 
