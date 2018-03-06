@@ -36,19 +36,18 @@ def get_combined_metadata(seq_list):
     :param seq_list: List of OLC Seq IDs
     :return: Dictionary containing Seq IDs as keys and combinedMetadata dataframes as values
     """
-    # Grab every single combinedMetadata file we have
+    # Grab every single combinedMetadata.csv file we have
     all_reports = glob.glob('/mnt/nas/WGSspades/*/reports/combinedMetadata.csv')
     metadata_report_dict = create_report_dictionary(report_list=all_reports, seq_list=seq_list, id_column='SeqID')
     return metadata_report_dict
 
 
-# TODO: Fix this for production to retrieve full list of GDCS reports
 def get_gdcs(seq_list):
     """
     :param seq_list: List of OLC Seq IDs
     :return: Dictionary containing Seq IDs as keys and GDCS dataframes as values
     """
-    # Grab every single combinedMetadata file we have
+    # Grab every single GDCS.csv file we have
     gdcs_reports = glob.glob('/mnt/nas/WGSspades/*/reports/GDCS.csv')
     gdcs_report_dict = create_report_dictionary(report_list=gdcs_reports, seq_list=seq_list, id_column='Strain')
     return gdcs_report_dict
@@ -128,6 +127,7 @@ def validate_mash(seq_list, metadata_reports, expected_species):
 
     return seq_status
 
+
 def generate_validated_list(seq_list, genus):
     """
     :param seq_list: List of OLC Seq IDs
@@ -175,4 +175,3 @@ def generate_gdcs_dict(gdcs_reports):
         passfail = df.loc[df['Strain'] == sample_id]['Pass/Fail'].values[0]
         gdcs_dict[sample_id] = (matches, passfail)
     return gdcs_dict
-
