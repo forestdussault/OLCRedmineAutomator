@@ -9,7 +9,7 @@ from settings_dev import AUTOMATOR_KEYWORDS, API_KEY, BIO_REQUESTS_DIR
 
 def redmine_setup(api_key):
     """
-    :param api_key: API key available from your Redmine user account settings. Stored in postgres_settings.py.
+    :param api_key: API key available from your Redmine user account settings. Stored in settings_dev.py.
     :return: instantiated Redmine API object
     """
     redmine_url = 'http://192.168.1.2:8080'
