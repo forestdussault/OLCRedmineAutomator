@@ -35,7 +35,6 @@ def update_db(date, year, genus, lab, source):
         autoroga_project_table = sa.Table('autoroga_project_table', meta, autoload=True, autoload_with=sa.engine)
         print('Successfully retrieved autoroga_project_table')
 
-
     # Grab what the next key value will be
     select_next_value = sa.select([autoroga_project_table.c.roga_id])
     keys = con.execute(select_next_value)

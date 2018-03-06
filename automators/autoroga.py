@@ -23,11 +23,11 @@ combinedMetadata.csv
 
 # TODO: Finish populating this dictionary
 lab_info = {
-    'GTA-CFIA': ('2301 Midland Ave., Scarborough, ON, M1P 4R7', '(416) 973-0798'),
-    'BUR-CFIA': ('3155 Willington Green, Burnaby, BC, V5G 4P2', '(604) 292-6028'),
-    'DAR-CFIA': ('1992 Agency Dr., Dartmouth, NS, B2Y 3Z7', '(902) 536-1046'),
-    'OLC-CFIA': ('960 Carling Ave, Ottawa, ON, K1A 0Y9', '(613) 759-1220'),
-    'OLF-CFIA': ('3851 Fallowfield Rd., Ottawa, ON, K2H 8P9', '(343) 212-0416')
+    'GTA': ('2301 Midland Ave., Scarborough, ON, M1P 4R7', '(416) 973-0798'),
+    'BUR': ('3155 Willington Green, Burnaby, BC, V5G 4P2', '(604) 292-6028'),
+    'DAR': ('1992 Agency Dr., Dartmouth, NS, B2Y 3Z7', '(902) 536-1046'),
+    'OLC': ('960 Carling Ave, Ottawa, ON, K1A 0Y9', '(613) 759-1220'),
+    'OLF': ('3851 Fallowfield Rd., Ottawa, ON, K2H 8P9', '(343) 212-0416')
 }
 
 
@@ -74,10 +74,8 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
     genus = description[2].capitalize()
     if genus not in ['Escherichia', 'Salmonella', 'Listeria']:
         redmine_instance.issue.update(resource_id=issue.id, status_id=3,
-                                      notes='ERROR: Input genus "{}" does not match any of the '
-                                                                  'acceptable values which include: '
-                                                                  '"Escherichia", "Salmonella", "Listeria"'
-                                                                  ''.format(genus))
+                                      notes='ERROR: Input genus "{}" does not match any of the acceptable values'
+                                            ' which include: "Escherichia", "Salmonella", "Listeria"'.format(genus))
         quit()
 
     # Parse seq IDs
@@ -102,7 +100,6 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
                                       notes='ERROR: Could not find one or more of the provided Seq IDs.\n'
                                             'TRACEBACK: {}'.format(e))
         quit()
-
 
     if len(validated_list) == 0:
         redmine_instance.issue.update(resource_id=issue.id, status_id=3,
@@ -129,7 +126,6 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
                                   notes='Generated ROGA successfully. Completed PDF report is attached.')
 
 
-
 def generate_roga(seq_list, genus, lab, source, work_dir):
     """
     Generates PDF ROGA
@@ -137,6 +133,7 @@ def generate_roga(seq_list, genus, lab, source, work_dir):
     :param genus: Expected Genus for samples (Salmonella, Listeria, or Escherichia)
     :param lab: ID for lab report is being generated for
     :param source: string input for source that strains were derived from, i.e. 'ground beef'
+    :param work_dir: bio_request directory
     """
 
     # Grab combinedMetadata dataframes for each requested Seq ID
