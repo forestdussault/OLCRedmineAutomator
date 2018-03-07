@@ -175,7 +175,6 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
         output_list.append(output_dict)
         redmine_instance.issue.update(resource_id=issue.id, uploads=output_list,
                                       notes='WGS Assembly Complete!')
-
         # Make redmine create an issue for that says that a run has finished and a database entry needs
         # to be made. assinged_to_id to use is 226. Priority is 3 (High).
         redmine_instance.issue.update(resource_id=issue.id,
@@ -183,6 +182,30 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
                                       subject='WGS Assembly: {}'.format(description[0]), # Add run name to subject
                                       notes='This run has finished assembly! Please add it to the OLC Database.')
 
+        # Apparently we're also supposed to be uploading assemblies - these will be too big to be Redmine attachments,
+        # so we'll need to upload to the ftp.
+        folder_to_upload = os.path.join(work_dir, 'reports_and_assemblies')
+        os.makedirs(folder_to_upload)
+        cmd = 'cp -r {best_assemblies} {upload_folder}'.format(best_assemblies=os.path.join(local_wgs_spades_folder, 'BestAssemblies'),
+                                                               upload_folder=folder_to_upload)
+        os.system(cmd)
+        cmd = 'cp -r {reports} {upload_folder}'.format(reports=os.path.join(local_wgs_spades_folder, 'reports'),
+                                                       upload_folder=folder_to_upload)
+        os.system(cmd)
+        shutil.make_archive(os.path.join(work_dir, str(issue.id)), 'zip', folder_to_upload)
+
+        # At this point, zip folder has been created (hopefully) called issue_id.zip in biorequest dir. Upload that
+        # to the FTP.
+        s = FTP('ftp.agr.gc.ca', user=FTP_USERNAME, passwd=FTP_PASSWORD)
+        s.cwd('outgoing/cfia-ak')
+        f = open(os.path.join(work_dir, str(issue.id) + '.zip'), 'rb')
+        s.storbinary('STOR {}.zip'.format(str(issue.id)), f)
+        f.close()
+        s.quit()
+
+        redmine_instance.issue.update(resource_id=issue.id,
+                                      notes='Reports and assemblies uploaded to FTP at: ftp://ftp.agr.gc.ca/outgoing/'
+                                            'cfia-ak/{}.zip'.format(issue.id))
         # Copy the raw files to the hdfs again, and then we try out the new pipeline.
         cmd = 'cp -r {local_folder} /hdfs'.format(local_folder=local_folder)
         os.system(cmd)
@@ -190,9 +213,9 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
         # Run the new pipeline docker image, after making sure it doesn't exist.
         cmd = 'docker rm -f cowbat'
         os.system(cmd)
-        cmd = 'docker run -i -u $(id -u) -v /mnt/nas:/mnt/nas --name cowbat --rm cowbat:latest /bin/bash -c ' \
+        cmd = 'docker run -i -u $(id -u) -v /mnt/nas:/mnt/nas -v /hdfs:/hdfs --name cowbat --rm cowbat:latest /bin/bash -c ' \
               '"source activate cowbat && assembly_pipeline.py {hdfs_folder} -r /mnt/nas/assemblydatabases' \
-              '/0.2.1/"'.format(hdfs_folder=os.path.join('/hdfs', sequence_folder))
+              '/0.2.3/databases"'.format(hdfs_folder=os.path.join('/hdfs', sequence_folder))
         os.system(cmd)
 
         # Move new pipeline result files to scratch for inspection.
