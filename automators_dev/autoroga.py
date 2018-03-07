@@ -239,7 +239,7 @@ def generate_roga(seq_list, genus, lab, source, work_dir):
         with doc.create(pl.Subsection('Identification Summary', numbering=False)) as summary:
 
             summary.append('Whole-genome sequencing analysis was conducted on '
-                           '{} presumptive '.format(len(metadata_reports)))
+                           '{} '.format(len(metadata_reports)))
             summary.append(italic('{} '.format(genus)))
 
             if len(metadata_reports) == 1:
@@ -385,12 +385,12 @@ def generate_roga(seq_list, genus, lab, source, work_dir):
         # SALMONELLA TABLE
         if genus == 'Salmonella':
             genesippr_table_columns = (bold('LSTS ID'),
-                                       bold(pl.NoEscape(r'Serovar')),
-                                       bold(pl.NoEscape(r'Serogroup{\footnotesize \textsuperscript {a}}')),
-                                       bold(pl.NoEscape(r'H1')),
-                                       bold(pl.NoEscape(r'H2')),
-                                       bold(pl.NoEscape(r'invA{\footnotesize \textsuperscript {a}}')),
-                                       bold(pl.NoEscape(r'stn{\footnotesize \textsuperscript {a}}')),
+                                       bold(pl.NoEscape(r'Serovar{\footnotesize \textsuperscript {a}}')),
+                                       bold(pl.NoEscape(r'Serogroup{\footnotesize \textsuperscript {a,b}}')),
+                                       bold(pl.NoEscape(r'H1{\footnotesize \textsuperscript {a}}')),
+                                       bold(pl.NoEscape(r'H2{\footnotesize \textsuperscript {a}}')),
+                                       bold(pl.NoEscape(r'invA{\footnotesize \textsuperscript {b}}')),
+                                       bold(pl.NoEscape(r'stn{\footnotesize \textsuperscript {b}}')),
                                        bold(pl.NoEscape(r'MLST')),
                                        bold(pl.NoEscape(r'rMLST')),
                                        )
@@ -431,8 +431,11 @@ def generate_roga(seq_list, genus, lab, source, work_dir):
                         table.add_row((lsts_id, serovar, sistr_serogroup, sistr_h1, sistr_h2, inva, stn, mlst, rmlst))
                     table.add_hline()
 
-                create_caption(genesippr_section, 'a', "+ indicates marker presence : "
+                create_caption(genesippr_section, 'a', "Predictions conducted using SISTR "
+                                                       "(Salmonella In Silico Typing Resource)")
+                create_caption(genesippr_section, 'b', "+ indicates marker presence : "
                                                        "- indicates marker was not detected")
+
 
         # SEQUENCE QUALITY METRICS
         sequence_quality_columns = (bold('LSTS ID'),
