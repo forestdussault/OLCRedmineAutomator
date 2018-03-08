@@ -24,6 +24,7 @@ The Redmine issue description input must be formatted as follows:
     GENUS
     SEQID
     SEQID
+    SEQID
     ... etc.
 
 A note on Sample IDs:
@@ -31,20 +32,19 @@ LSTS ID should be parsed from SampleSheet.csv by the COWBAT pipeline, and is ava
 file that is central to this script's extraction of data. The LSTS ID is available under the 'SampleName' column in
 combinedMetadata.csv
 
-TODO: Add phone numbers for each address in the lab_info dictionary
 TODO: GDCS + GenomeQAML combined metric. Everything must pass in order to be listed as 'PASS'
 """
 
 lab_info = {
-    'GTA': ('2301 Midland Ave., Scarborough, ON, M1P 4R7', '-'),
-    'BUR': ('3155 Willington Green, Burnaby, BC, V5G 4P2', '-'),
-    'OLC': ('960 Carling Ave, Building 22 CEF, Ottawa, ON, K1A 0Y9', '-'),
-    'FFFM': ('960 Carling Ave, Building 22 CEF, Ottawa, ON, K1A 0Y9', '-'),
-    'FMB': ('960 Carling Ave, Building 22 CEF, Ottawa, ON, K1A 0Y9', '-'),
-    'OLF': ('3851 Fallowfield Rd., Ottawa, ON, K2H 8P9', '-'),
-    'DAR': ('1992 Agency Dr., Dartmouth, NS, B2Y 3Z7', '-'),
-    'CAL': ('3650 36 Street NW, Calgary, AB, T2L 2L1', '-'),
-    'STH': ('3400 Casavant Boulevard W., St. Hyacinthe, QC, J2S 8E3', '-'),
+    'GTA': ('2301 Midland Ave., Scarborough, ON, M1P 4R7', '416-952-3203'),
+    'BUR': ('3155 Willington Green, Burnaby, BC, V5G 4P2', '604-292-6028'),
+    'OLC': ('960 Carling Ave, Building 22 CEF, Ottawa, ON, K1A 0Y9', '613-759-1263'),
+    'FFFM': ('960 Carling Ave, Building 22 CEF, Ottawa, ON, K1A 0Y9', '613-759-1263'),
+    'DAR': ('1992 Agency Dr., Dartmouth, NS, B2Y 3Z7', '902-536-1012'),
+    'CAL': ('3650 36 Street NW, Calgary, AB, T2L 2L1', '403-338-5200'),
+    'STH': ('3400 Casavant Boulevard W., St. Hyacinthe, QC, J2S 8E3', '450-768-6800'),
+    'FMB': ('960 Carling Ave, Building 22 CEF, Ottawa, ON, K1A 0Y9', '613-759-1263'),  # Not in use
+    'OLF': ('3851 Fallowfield Rd., Ottawa, ON, K2H 8P9', '343-212-0500'),  # Not in use
 }
 
 
