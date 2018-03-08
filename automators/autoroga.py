@@ -248,9 +248,9 @@ def generate_roga(seq_list, genus, lab, source, work_dir):
             summary.append(italic('{} '.format(genus)))
 
             if len(metadata_reports) == 1:
-                summary.append('strain isolated from {}. '.format(source.lower()))
+                summary.append('strain isolated from "{}". '.format(source.lower()))
             else:
-                summary.append('strains isolated from {}. '.format(source.lower()))
+                summary.append('strains isolated from "{}". '.format(source.lower()))
 
             if genus == 'Escherichia':
                 if all_uida:
