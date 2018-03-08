@@ -11,23 +11,40 @@ from datetime import datetime
 from pylatex.utils import bold, italic
 from autoroga_database import update_db
 
-# TODO: GDCS + GenomeQAML combined metric. Everything must pass in order to be listed as 'PASS'
 """
+This script receives input from a CFIA Redmine issue and will generate a ROGA using associated assembly data.
+A search is done for each of the input SEQ IDs in the WGSAssembly folders, then the combinedMetadata.csv and GDCS.csv 
+files associated with each sample are parsed and formatted for the report. These two .csv files are generated via the 
+COWBAT pipeline and should be available for every new assembly.
+
+The Redmine issue description input must be formatted as follows:
+
+    LABID
+    SOURCE
+    GENUS
+    SEQID
+    SEQID
+    ... etc.
+
 A note on Sample IDs:
-
-LSTS ID should be parsed from SampleSheet.csv by the COWBAT pipeline, and available within the combinedMetadata.csv
-file that is central to this script's extraction of data. The LSTS ID is available under the SampleName column in
+LSTS ID should be parsed from SampleSheet.csv by the COWBAT pipeline, and is available within the combinedMetadata.csv
+file that is central to this script's extraction of data. The LSTS ID is available under the 'SampleName' column in
 combinedMetadata.csv
+
+TODO: Add phone numbers for each address in the lab_info dictionary
+TODO: GDCS + GenomeQAML combined metric. Everything must pass in order to be listed as 'PASS'
 """
 
-
-# TODO: Finish populating this dictionary
 lab_info = {
-    'GTA': ('2301 Midland Ave., Scarborough, ON, M1P 4R7', '(416) 973-0798'),
-    'BUR': ('3155 Willington Green, Burnaby, BC, V5G 4P2', '(604) 292-6028'),
-    'DAR': ('1992 Agency Dr., Dartmouth, NS, B2Y 3Z7', '(902) 536-1046'),
-    'OLC': ('960 Carling Ave, Ottawa, ON, K1A 0Y9', '(613) 759-1220'),
-    'OLF': ('3851 Fallowfield Rd., Ottawa, ON, K2H 8P9', '(343) 212-0416')
+    'GTA': ('2301 Midland Ave., Scarborough, ON, M1P 4R7', '-'),
+    'BUR': ('3155 Willington Green, Burnaby, BC, V5G 4P2', '-'),
+    'OLC': ('960 Carling Ave, Building 22 CEF, Ottawa, ON, K1A 0Y9', '-'),
+    'FFFM': ('960 Carling Ave, Building 22 CEF, Ottawa, ON, K1A 0Y9', '-'),
+    'FMB': ('960 Carling Ave, Building 22 CEF, Ottawa, ON, K1A 0Y9', '-'),
+    'OLF': ('3851 Fallowfield Rd., Ottawa, ON, K2H 8P9', '-'),
+    'DAR': ('1992 Agency Dr., Dartmouth, NS, B2Y 3Z7', '-'),
+    'CAL': ('3650 36 Street NW, Calgary, AB, T2L 2L1', '-'),
+    'STH': ('3400 Casavant Boulevard W., St. Hyacinthe, QC, J2S 8E3', '-'),
 }
 
 
@@ -38,13 +55,7 @@ lab_info = {
 @click.option('--description', help='Path to pickled Redmine description')
 def redmine_roga(redmine_instance, issue, work_dir, description):
     """
-    Main method for generating a ROGA. Redmine description must be in the following format:
-
-    LABID
-    SOURCE
-    GENUS
-    SEQIDs...
-
+    Main method for generating a ROGA
     """
 
     # Unpickle Redmine objects
@@ -78,7 +89,7 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
                                             ' which include: "Escherichia", "Salmonella", "Listeria"'.format(genus))
         quit()
 
-    # Parse seq IDs
+    # Parse Seq IDs
     seqids = list()
     for item in description[3:]:
         item = item.upper().strip()
@@ -91,7 +102,7 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
     print('GENUS: %s' % genus)
     print('SEQIDS: %s' % str(seqids))
 
-    # Validate Seq IDS
+    # Validate Seq IDs
     validated_list = []
     try:
         validated_list = extract_report_data.generate_validated_list(seq_list=seqids, genus=genus)
@@ -114,7 +125,7 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
                              source=source,
                              work_dir=work_dir)
 
-    # Output list containing dictionaries with file path as the key
+    # Output list containing dictionaries with file path as the key for upload to Redmine
     output_list = [
         {
             'path': os.path.join(work_dir, pdf_file),
@@ -128,7 +139,7 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
 
 def generate_roga(seq_list, genus, lab, source, work_dir):
     """
-    Generates PDF ROGA
+    Generates PDF
     :param seq_list: List of OLC Seq IDs
     :param genus: Expected Genus for samples (Salmonella, Listeria, or Escherichia)
     :param lab: ID for lab report is being generated for
@@ -136,18 +147,16 @@ def generate_roga(seq_list, genus, lab, source, work_dir):
     :param work_dir: bio_request directory
     """
 
-    # Grab combinedMetadata dataframes for each requested Seq ID
+    # RETRIEVE DATAFRAMES FOR EACH SEQID
     metadata_reports = extract_report_data.get_combined_metadata(seq_list)
-
-    # Date setup
-    date = datetime.today().strftime('%Y-%m-%d')
-    year = datetime.today().strftime('%Y')
-
-    # Grab GDCS data for each requested Seq ID
     gdcs_reports = extract_report_data.get_gdcs(seq_list)
     gdcs_dict = extract_report_data.generate_gdcs_dict(gdcs_reports)
 
-    # Page setup
+    # DATE SETUP
+    date = datetime.today().strftime('%Y-%m-%d')
+    year = datetime.today().strftime('%Y')
+
+    # PAGE SETUP
     geometry_options = {"tmargin": "2cm",
                         "lmargin": "1.8cm",
                         "rmargin": "1.8cm",
@@ -157,12 +166,17 @@ def generate_roga(seq_list, genus, lab, source, work_dir):
                       geometry_options=geometry_options)
 
     header = produce_header_footer()
-
     doc.preamble.append(header)
     doc.change_document_style("header")
 
     # DATABASE HANDLING
     report_id = update_db(date=date, year=year, genus=genus, lab=lab, source=source)
+
+    # MARKER VARIABLES SETUP
+    all_uida = False
+    all_vt = False
+    all_mono = False
+    all_enterica = False
 
     # SECOND VALIDATION SCREEN
     if genus == 'Escherichia':
@@ -182,11 +196,8 @@ def generate_roga(seq_list, genus, lab, source, work_dir):
             if not ecoli_vt_present:
                 print('WARNING: vt marker not detected for {}. Cannot confirm strain is verotoxigenic.'.format(key))
 
-        all_uida = False
         if False not in uida_list:
             all_uida = True
-
-        all_vt = False
         if False not in vt_list:
             all_vt = True
 
@@ -197,11 +208,8 @@ def generate_roga(seq_list, genus, lab, source, work_dir):
         mono_list = []
         for key, value in validated_listeria_dict.items():
             mono_list.append(value)
-
         if False not in mono_list:
             all_mono = True
-        else:
-            all_mono = False
 
     elif genus == 'Salmonella':
         validated_salmonella_dict = extract_report_data.validate_mash(seq_list,
@@ -210,13 +218,10 @@ def generate_roga(seq_list, genus, lab, source, work_dir):
         enterica_list = []
         for key, value in validated_salmonella_dict.items():
             enterica_list.append(value)
-
         if False not in enterica_list:
             all_enterica = True
-        else:
-            all_enterica = False
 
-    # DOCUMENT BODY/CREATION
+    # MAIN DOCUMENT BODY
     with doc.create(pl.Section('Report of Genomic Analysis: ' + genus, numbering=False)):
 
         # REPORT ID
@@ -243,9 +248,9 @@ def generate_roga(seq_list, genus, lab, source, work_dir):
             summary.append(italic('{} '.format(genus)))
 
             if len(metadata_reports) == 1:
-                summary.append('strain isolated from {}. '.format(source))
+                summary.append('strain isolated from {}. '.format(source.lower()))
             else:
-                summary.append('strains isolated from {}. '.format(source))
+                summary.append('strains isolated from {}. '.format(source.lower()))
 
             if genus == 'Escherichia':
                 if all_uida:
@@ -436,8 +441,7 @@ def generate_roga(seq_list, genus, lab, source, work_dir):
                 create_caption(genesippr_section, 'b', "+ indicates marker presence : "
                                                        "- indicates marker was not detected")
 
-
-        # SEQUENCE QUALITY METRICS
+        # SEQUENCE TABLE
         sequence_quality_columns = (bold('LSTS ID'),
                                     bold(pl.NoEscape(r'Total Length')),
                                     bold(pl.NoEscape(r'Coverage')),
@@ -445,7 +449,6 @@ def generate_roga(seq_list, genus, lab, source, work_dir):
                                     bold(pl.NoEscape(r'Pass/Fail')),
                                     )
 
-        # Create the sequence table
         with doc.create(pl.Subsection('Sequence Quality Metrics', numbering=False)):
             with doc.create(pl.Tabular('|c|c|c|c|c|')) as table:
                 # Header
@@ -478,7 +481,7 @@ def generate_roga(seq_list, genus, lab, source, work_dir):
                     table.add_row((lsts_id, total_length, average_coverage_depth, matches, passfail))
                 table.add_hline()
 
-        # Pipeline metadata table
+        # PIPELINE METADATA TABLE
         pipeline_metadata_columns = (bold('LSTS ID'),
                                      bold('Seq ID'),
                                      bold('Pipeline Version'),
@@ -499,15 +502,14 @@ def generate_roga(seq_list, genus, lab, source, work_dir):
 
                     # Pipeline version
                     pipeline_version = df.loc[df['SeqID'] == sample_id]['PipelineVersion'].values[0]
-                    database_version = pipeline_version  # These have been harmonized
-                    # database_version = df.loc[df['SeqID'] == sample_id]['DatabaseVersion'].values[0]
+                    database_version = pipeline_version
 
                     # Add row
                     table.add_row((lsts_id, sample_id, pipeline_version, database_version))
 
                 table.add_hline()
 
-        # VERIFIED BY
+        # 'VERIFIED BY' FIELD
         with doc.create(pl.Subsubsection('Verified by:', numbering=False)):
             with doc.create(Form()):
                 doc.append(pl.Command('noindent'))
@@ -519,17 +521,16 @@ def generate_roga(seq_list, genus, lab, source, work_dir):
                                                "height=0.3in"],
                                       arguments=''))
 
+    # OUTPUT PDF FILE
     pdf_file = os.path.join(work_dir, '{}_{}_{}'.format(report_id, genus, date))
     doc.generate_pdf(pdf_file, clean_tex=False)
-
     pdf_file += '.pdf'
-
     return pdf_file
 
 
 def produce_header_footer():
     """
-    Adds a generic header/footer to the report. Includes the date and CFIA logo in the header, and legend in the footer.
+    Adds a generic header/footer to the report. Includes the date and CFIA logo in the header + legend in the footer.
     """
     header = pl.PageStyle("header", header_thickness=0.1)
 
@@ -581,7 +582,6 @@ def get_image():
 
 class Form(pl.base_classes.Environment):
     """A class to wrap hyperref's form environment."""
-
     _latex_name = 'Form'
 
     packages = [pl.Package('hyperref')]
