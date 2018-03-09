@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+import datetime
 
 from automator_settings import POSTGRES_PASSWORD, POSTGRES_USERNAME
 
@@ -16,22 +17,27 @@ def connect(user, password, db, host='192.168.1.5', port=5432):
     return con, meta
 
 
-def update_db(date, year, genus, lab, source):
+def update_db(date, year, genus, lab, source, amendment_flag, amended_id):
     con, meta = connect(user=POSTGRES_USERNAME, password=POSTGRES_PASSWORD, db='autoroga')
 
     ROGA_ID_SEQ = sa.Sequence('roga_id_seq')
 
-    try:
+    try:  # Create table if it doesn't already exist
         autoroga_project_table = sa.Table('autoroga_project_table', meta,
-                                          sa.Column('roga_id', sa.INTEGER, ROGA_ID_SEQ,
+                                          sa.Column('id', sa.INTEGER, ROGA_ID_SEQ,
                                                     primary_key=True, server_default=ROGA_ID_SEQ.next_value()),
+                                          sa.Column('roga_id', sa.String(64)),
                                           sa.Column('genus', sa.String(64)),
                                           sa.Column('lab', sa.String(16)),
                                           sa.Column('source', sa.String(64)),
-                                          sa.Column('date', sa.Date))
+                                          sa.Column('amendment_flag', sa.String(16)),
+                                          sa.Column('amended_id', sa.String(64)),
+                                          sa.Column('date', sa.Date),
+                                          sa.Column('time', sa.DateTime, default=datetime.datetime.utcnow))
         meta.create_all()
         print('Successfully created autoroga_project_table')
-    except:
+
+    except:  # Retrieve table if it already exists
         autoroga_project_table = sa.Table('autoroga_project_table', meta, autoload=True, autoload_with=sa.engine)
         print('Successfully retrieved autoroga_project_table')
 
@@ -44,11 +50,12 @@ def update_db(date, year, genus, lab, source):
     except:
         next_val = 1
 
-    # Insert new row into table
-    ins = autoroga_project_table.insert().values(genus=genus, date=date, lab=lab, source=source)
+    # Create ROGA ID
+    roga_id = year + '-ROGA-' + '{:04d}'.format(next_val)
+
+    # Insert new row into autoroga_project_table table
+    ins = autoroga_project_table.insert().values(roga_id=roga_id, genus=genus, date=date, lab=lab, source=source,
+                                                 amendment_flag=amendment_flag, amended_id=amended_id)
     con.execute(ins)
 
-    # Create report ID
-    report_id = year + '-ROGA-' + '{:04d}'.format(next_val)
-
-    return report_id
+    return roga_id

@@ -19,6 +19,7 @@ COWBAT pipeline and should be available for every new assembly.
 
 The Redmine issue description input must be formatted as follows:
 
+    AMENDMENT:REPORTID [optional]
     LABID
     SOURCE
     GENUS
@@ -33,6 +34,7 @@ file that is central to this script's extraction of data. The LSTS ID is availab
 combinedMetadata.csv
 
 TODO: GDCS + GenomeQAML combined metric. Everything must pass in order to be listed as 'PASS'
+TODO: Amendment flag (adds amendment line in summary, takes original report ID as input, generates new report)
 """
 
 lab_info = {
@@ -63,39 +65,96 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
     issue = pickle.load(open(issue, 'rb'))
     description = pickle.load(open(description, 'rb'))
 
-    # Parse lab ID
-    lab = description[0]
-    if lab not in lab_info:
-        valid_labs = str([x for x, y in lab_info.items()])
-        redmine_instance.issue.update(resource_id=issue.id, status_id=3,
-                                      notes='ERROR: Invalid Lab ID provided. Please ensure the first line of your '
-                                            'Redmine description specifies one of the following labs:\n'
-                                            '{}'.format(valid_labs))
-        quit()
+    # Setup
+    amended_report_id = None
+    lab = None
+    genus = None
+    source = None
+    seqids = None
 
-    # Parse source
-    source = description[1].lower()
-    if len(source.split('-')) > 2:
-        redmine_instance.issue.update(resource_id=issue.id, status_id=3,
-                                      notes='ERROR: Invalid source provided. '
-                                            'Line 2 of the Redmine description must be a valid string e.g. "flour"')
-        quit()
+    # Amendment functionality
+    amendment_flag = False
+    amendment_check = description[0].upper()
+    if 'AMENDMENT' in amendment_check:
+        amendment_flag = True
 
-    # Parse genus
-    genus = description[2].capitalize()
-    if genus not in ['Escherichia', 'Salmonella', 'Listeria']:
-        redmine_instance.issue.update(resource_id=issue.id, status_id=3,
-                                      notes='ERROR: Input genus "{}" does not match any of the acceptable values'
-                                            ' which include: "Escherichia", "Salmonella", "Listeria"'.format(genus))
-        quit()
+    # Parse fields
+    if amendment_flag is False:
+        # Parse lab ID
+        lab = description[0]
+        if lab not in lab_info:
+            valid_labs = str([x for x, y in lab_info.items()])
+            redmine_instance.issue.update(resource_id=issue.id, status_id=3,
+                                          notes='ERROR: Invalid Lab ID provided. Please ensure the first line of your '
+                                                'Redmine description specifies one of the following labs:\n'
+                                                '{}'.format(valid_labs))
+            quit()
 
-    # Parse Seq IDs
-    seqids = list()
-    for item in description[3:]:
-        item = item.upper().strip()
-        if item != '':
-            seqids.append(item)
-    seqids = tuple(seqids)
+        # Parse source
+        source = description[1].lower()
+        if len(source.split('-')) > 2:
+            redmine_instance.issue.update(resource_id=issue.id, status_id=3,
+                                          notes='ERROR: Invalid source provided. '
+                                                'Line 2 of the Redmine description must be a valid string e.g. "flour"')
+            quit()
+
+        # Parse genus
+        genus = description[2].capitalize()
+        if genus not in ['Escherichia', 'Salmonella', 'Listeria']:
+            redmine_instance.issue.update(resource_id=issue.id, status_id=3,
+                                          notes='ERROR: Input genus "{}" does not match any of the acceptable values'
+                                                ' which include: "Escherichia", "Salmonella", "Listeria"'.format(genus))
+            quit()
+
+        # Parse Seq IDs
+        seqids = list()
+        for item in description[3:]:
+            item = item.upper().strip()
+            if item != '':
+                seqids.append(item)
+        seqids = tuple(seqids)
+    elif amendment_flag:
+        try:
+            amended_report_id = amendment_check.split(':')[1]
+        except IndexError:
+            redmine_instance.issue.update(resource_id=issue.id, status_id=3,
+                                          notes='ERROR: Could not parse AutoROGA ID from AMENDMENT field.\n'
+                                                'Must be formatted as follows: AMENDMENT:ROGAID')
+            quit()
+
+        # Parse lab ID
+        lab = description[1]
+        if lab not in lab_info:
+            valid_labs = str([x for x, y in lab_info.items()])
+            redmine_instance.issue.update(resource_id=issue.id, status_id=3,
+                                          notes='ERROR: Invalid Lab ID provided. Please ensure the first line of your '
+                                                'Redmine description specifies one of the following labs:\n'
+                                                '{}'.format(valid_labs))
+            quit()
+
+        # Parse source
+        source = description[2].lower()
+        if len(source.split('-')) > 2:
+            redmine_instance.issue.update(resource_id=issue.id, status_id=3,
+                                          notes='ERROR: Invalid source provided. '
+                                                'Line 2 of the Redmine description must be a valid string e.g. "flour"')
+            quit()
+
+        # Parse genus
+        genus = description[3].capitalize()
+        if genus not in ['Escherichia', 'Salmonella', 'Listeria']:
+            redmine_instance.issue.update(resource_id=issue.id, status_id=3,
+                                          notes='ERROR: Input genus "{}" does not match any of the acceptable values'
+                                                ' which include: "Escherichia", "Salmonella", "Listeria"'.format(genus))
+            quit()
+
+        # Parse Seq IDs
+        seqids = list()
+        for item in description[4:]:
+            item = item.upper().strip()
+            if item != '':
+                seqids.append(item)
+        seqids = tuple(seqids)
 
     print('LAB: %s' % lab)
     print('SOURCE: %s' % source)
@@ -123,7 +182,9 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
                              genus=genus,
                              lab=lab,
                              source=source,
-                             work_dir=work_dir)
+                             work_dir=work_dir,
+                             amendment_flag=amendment_flag,
+                             amended_id=amended_report_id)
 
     # Output list containing dictionaries with file path as the key for upload to Redmine
     output_list = [
@@ -137,7 +198,7 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
                                   notes='Generated ROGA successfully. Completed PDF report is attached.')
 
 
-def generate_roga(seq_list, genus, lab, source, work_dir):
+def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amended_id):
     """
     Generates PDF
     :param seq_list: List of OLC Seq IDs
@@ -145,6 +206,8 @@ def generate_roga(seq_list, genus, lab, source, work_dir):
     :param lab: ID for lab report is being generated for
     :param source: string input for source that strains were derived from, i.e. 'ground beef'
     :param work_dir: bio_request directory
+    :param amendment_flag: determined if the report is an amendment type or not (True/False)
+    :param amended_id: ID of the original report that the new report is amending
     """
 
     # RETRIEVE DATAFRAMES FOR EACH SEQID
@@ -162,15 +225,15 @@ def generate_roga(seq_list, genus, lab, source, work_dir):
                         "rmargin": "1.8cm",
                         "headsep": "1cm"}
 
-    doc = pl.Document(page_numbers=False,
-                      geometry_options=geometry_options)
+    doc = pl.Document(page_numbers=False, geometry_options=geometry_options)
 
     header = produce_header_footer()
     doc.preamble.append(header)
     doc.change_document_style("header")
 
     # DATABASE HANDLING
-    report_id = update_db(date=date, year=year, genus=genus, lab=lab, source=source)
+    report_id = update_db(date=date, year=year, genus=genus, lab=lab, source=source,
+                          amendment_flag=amendment_flag, amended_id=amended_id)
 
     # MARKER VARIABLES SETUP
     all_uida = False
@@ -224,21 +287,48 @@ def generate_roga(seq_list, genus, lab, source, work_dir):
     # MAIN DOCUMENT BODY
     with doc.create(pl.Section('Report of Genomic Analysis: ' + genus, numbering=False)):
 
-        # REPORT ID
-        doc.append(bold('Report ID: '))
-        doc.append(report_id)
+        # REPORT ID AND AMENDMENT CHECKING
+        if amendment_flag:
+            doc.append(bold('Report ID: '))
+            doc.append(report_id)
+            doc.append(italic(' (This report is an amended version of '))
+            doc.append(amended_id)
+            doc.append(italic(')'))
+            doc.append(bold('\nReporting laboratory: '))
+            doc.append(lab)
+            doc.append('\n\n')
 
-        # REPORTING LAB
-        doc.append(bold('\nReporting laboratory: '))
-        doc.append(lab)
-        doc.append('\n\n')
+            # LAB SUMMARY
+            with doc.create(pl.Tabular('lcr', booktabs=True)) as table:
+                table.add_row(bold('Laboratory'),
+                              bold('Address'),
+                              bold('Tel #'))
+                table.add_row(lab, lab_info[lab][0], lab_info[lab][1])
 
-        # LAB SUMMARY
-        with doc.create(pl.Tabular('lcr', booktabs=True)) as table:
-            table.add_row(bold('Laboratory'),
-                          bold('Address'),
-                          bold('Tel #'))
-            table.add_row(lab, lab_info[lab][0], lab_info[lab][1])
+            # AMENDMENT FIELD
+            with doc.create(pl.Subsubsection('Reason for amendment:', numbering=False)):
+                with doc.create(Form()):
+                    doc.append(pl.Command('noindent'))
+                    doc.append(pl.Command('TextField',
+                                          options=["name=amendmentbox",
+                                                   "multiline=true",
+                                                   pl.NoEscape("bordercolor=0 0 0"),
+                                                   pl.NoEscape("width=7in"),
+                                                   "height=0.43in"],
+                                          arguments=''))
+        else:
+            doc.append(bold('Report ID: '))
+            doc.append(report_id)
+            doc.append(bold('\nReporting laboratory: '))
+            doc.append(lab)
+            doc.append('\n\n')
+
+            # LAB SUMMARY
+            with doc.create(pl.Tabular('lcr', booktabs=True)) as table:
+                table.add_row(bold('Laboratory'),
+                              bold('Address'),
+                              bold('Tel #'))
+                table.add_row(lab, lab_info[lab][0], lab_info[lab][1])
 
         # TEXT SUMMARY
         with doc.create(pl.Subsection('Identification Summary', numbering=False)) as summary:
@@ -514,7 +604,7 @@ def generate_roga(seq_list, genus, lab, source, work_dir):
             with doc.create(Form()):
                 doc.append(pl.Command('noindent'))
                 doc.append(pl.Command('TextField',
-                                      options=["name=multilinetextbox",
+                                      options=["name=verifiedbybox",
                                                "multiline=false",
                                                pl.NoEscape("bordercolor=0 0 0"),
                                                pl.NoEscape("width=2.5in"),
@@ -523,7 +613,12 @@ def generate_roga(seq_list, genus, lab, source, work_dir):
 
     # OUTPUT PDF FILE
     pdf_file = os.path.join(work_dir, '{}_{}_{}'.format(report_id, genus, date))
-    doc.generate_pdf(pdf_file, clean_tex=False)
+
+    try:
+        doc.generate_pdf(pdf_file, clean_tex=False)
+    except:
+        pass
+
     pdf_file += '.pdf'
     return pdf_file
 
