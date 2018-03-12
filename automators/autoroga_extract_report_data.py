@@ -1,18 +1,19 @@
+import os
 import glob
 import pandas as pd
+from automator_settings import ASSEMBLIES_FOLDER
 
 
-def create_report_dictionary(report_list, seq_list, id_column):
+def create_report_dictionary(report_list, seq_list, id_column='SeqID'):
     """
     :param report_list: List of paths to report files
     :param seq_list: List of OLC Seq IDs
     :param id_column: Column used to specify primary key
     :return: Dictionary containing Seq IDs as keys and dataframes as values
     """
-    # Create empty dict to store reports of interest
     report_dict = {}
 
-    # Iterate over every metadata file
+    # Iterate over every metadata file (e.g. combinedMetadata.csv or GDCS.csv)
     for report in report_list:
         # Check if the sample we want is in file
         df = pd.read_csv(report)
@@ -21,7 +22,7 @@ def create_report_dictionary(report_list, seq_list, id_column):
         try:
             samples = df[id_column]
         except KeyError:
-            samples = df['SampleName']
+            samples = df['SampleName']  # This was the old column name for SeqID
 
         # Check all of our sequences of interest to see if they are in the combinedMetadata file
         for seq in seq_list:
@@ -37,8 +38,8 @@ def get_combined_metadata(seq_list):
     :return: Dictionary containing Seq IDs as keys and combinedMetadata dataframes as values
     """
     # Grab every single combinedMetadata.csv file we have
-    all_reports = glob.glob('/mnt/nas/WGSspades/*/reports/combinedMetadata.csv')
-    metadata_report_dict = create_report_dictionary(report_list=all_reports, seq_list=seq_list, id_column='SeqID')
+    all_reports = glob.glob(os.path.join(ASSEMBLIES_FOLDER,'*/reports/combinedMetadata.csv'))
+    metadata_report_dict = create_report_dictionary(report_list=all_reports, seq_list=seq_list)
     return metadata_report_dict
 
 
@@ -48,7 +49,7 @@ def get_gdcs(seq_list):
     :return: Dictionary containing Seq IDs as keys and GDCS dataframes as values
     """
     # Grab every single GDCS.csv file we have
-    gdcs_reports = glob.glob('/mnt/nas/WGSspades/*/reports/GDCS.csv')
+    gdcs_reports = glob.glob(os.path.join(ASSEMBLIES_FOLDER, '*/reports/GDCS.csv'))
     gdcs_report_dict = create_report_dictionary(report_list=gdcs_reports, seq_list=seq_list, id_column='Strain')
     return gdcs_report_dict
 
@@ -134,7 +135,6 @@ def generate_validated_list(seq_list, genus):
     :param genus: String of expected genus (Salmonella, Listeria, Escherichia)
     :return: List containing each valid Seq ID
     """
-    # VALIDATION
     validated_list = []
     validated_dict = validate_genus(seq_list=seq_list, genus=genus)
 
@@ -170,7 +170,6 @@ def generate_gdcs_dict(gdcs_reports):
     """
     gdcs_dict = {}
     for sample_id, df in gdcs_reports.items():
-        # Grab values
         matches = df.loc[df['Strain'] == sample_id]['Matches'].values[0]
         passfail = df.loc[df['Strain'] == sample_id]['Pass/Fail'].values[0]
         gdcs_dict[sample_id] = (matches, passfail)
