@@ -43,7 +43,7 @@ def update_db(date, year, genus, lab, source, amendment_flag, amended_id):
         print('Successfully retrieved autoroga_project_table')
 
     # Grab what the next key value will be
-    select_next_value = sa.select([autoroga_project_table.c.roga_id])
+    select_next_value = sa.select([autoroga_project_table.c.id])
     keys = con.execute(select_next_value)
 
     try:
