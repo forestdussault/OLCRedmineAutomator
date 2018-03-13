@@ -555,7 +555,7 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
                     average_coverage_depth = df.loc[df['SeqID'] == sample_id]['AverageCoverageDepth'].values[0]
 
                     # Fix coverage
-                    average_coverage_depth = format(float(average_coverage_depth.replace('X', '')), '.0f')
+                    average_coverage_depth = format(float(str(average_coverage_depth).replace('X', '')), '.0f')
                     average_coverage_depth = str(average_coverage_depth) + 'X'
 
                     # Matches

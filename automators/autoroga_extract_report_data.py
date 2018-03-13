@@ -16,7 +16,13 @@ def create_report_dictionary(report_list, seq_list, id_column='SeqID'):
     # Iterate over every metadata file (e.g. combinedMetadata.csv or GDCS.csv)
     for report in report_list:
         # Check if the sample we want is in file
-        df = pd.read_csv(report)
+        print(report)
+
+        # Accomodating runs that might still be in progress
+        try:
+            df = pd.read_csv(report)
+        except: # from pandas.io.parser import CParserError try/except with CParserError for this
+            continue
 
         # Accomodating old reports coming up
         try:

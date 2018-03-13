@@ -4,6 +4,7 @@ import datetime
 from automator_settings import POSTGRES_PASSWORD, POSTGRES_USERNAME
 
 
+# Default connection to the address of the head node - should be 192.168.1.5
 def connect(user, password, db, host='192.168.1.5', port=5432):
     url = 'postgresql://{}:{}@{}:{}/{}'
     url = url.format(user, password, host, port, db)
