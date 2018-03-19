@@ -13,7 +13,6 @@ mpl.use('Agg')
 import matplotlib.pyplot as plt
 
 
-
 def extract_taxonomy(value):
     """
     :param value:
@@ -194,7 +193,7 @@ def generate_pct_labels(values, labels):
     for label in labels_values:
         if label[0] != '':
             # This determined if there is an integer or a float or whatever in the label. Change %i to %.2f for floats.
-            pct_labels.append(label[0] + '\n(%i' % label[1] + '%)')
+            pct_labels.append(label[0] + ' (%i' % label[1] + '%)')
     return pct_labels
 
 
@@ -212,10 +211,10 @@ def paired_multi_pie_charts(samples, out_dir, filtering):
     colordict = read_color_pickle()
 
     # Font size
-    mpl.rcParams['font.size'] = 9
+    mpl.rcParams['font.size'] = 8
 
     # Setup figure canvas
-    plt.figure(figsize=(24, 16))
+    plt.figure(figsize=(24, 14))
 
     # Regex setup -- grabs numeric value from string
     reg_pattern = re.compile(r'^\D*(\d+(?:\.\d+)?)\D*$')
@@ -245,7 +244,7 @@ def paired_multi_pie_charts(samples, out_dir, filtering):
 
         # Create raw pie chart
         wedges, labels = ax.pie(attributes[0], labels=attributes[1], explode=attributes[2],
-                                startangle=80, shadow=False)
+                                startangle=0, shadow=False)
 
         # Fix labels on the pie chart
         for label, pct_label in zip(labels, pct_labels_dict[sample]):
