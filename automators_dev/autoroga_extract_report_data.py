@@ -45,7 +45,7 @@ def get_combined_metadata(seq_list):
     :return: Dictionary containing Seq IDs as keys and combinedMetadata dataframes as values
     """
     # Grab every single combinedMetadata.csv file we have
-    all_reports = glob.glob(os.path.join(ASSEMBLIES_FOLDER,'*/reports/combinedMetadata.csv'))
+    all_reports = glob.glob(os.path.join(ASSEMBLIES_FOLDER, '*/reports/combinedMetadata.csv'))
     metadata_report_dict = create_report_dictionary(report_list=all_reports, seq_list=seq_list)
     return metadata_report_dict
 
