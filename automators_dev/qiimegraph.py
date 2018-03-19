@@ -100,6 +100,12 @@ def qiimegraph(redmine_instance, issue, work_dir, description):
 
         # Zip up all of the ouput
         output_files = glob.glob(os.path.join(work_dir, '*.png'))
+        if len(output_files) == 0:
+            redmine_instance.issue.update(resource_id=issue.id, status_id=3,
+                                          notes='ERROR: Something went wrong. Please verify the provided Sample IDs are'
+                                                'correct.')
+            quit()
+
         zipped = zipfile.ZipFile(os.path.join(work_dir, 'qiime2_graphs.zip'), 'w')
         for file in output_files:
             zipped.write(file, arcname=os.path.basename(file), compress_type=zipfile.ZIP_DEFLATED)
