@@ -1,7 +1,6 @@
 from collections import OrderedDict
 import os
 import re
-import glob
 import click
 import pickle
 import qiime2
@@ -11,7 +10,6 @@ import pandas as pd
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
-
 
 
 def extract_taxonomy(value):
@@ -296,7 +294,7 @@ def paired_multi_pie_charts(samples, out_dir, filtering):
         elif n_samples < 4:
             x_counter += 1
 
-    # Sloppy way of naming the files. TODO: Revisit this.
+    # File naming
     prepend = ''
     for key in samples:
         prepend += key
@@ -358,33 +356,45 @@ def get_spaced_colors(n):
 
     return [((int(i[:2], 16)) / 255, (int(i[2:4], 16)) / 255, (int(i[4:], 16) / 255)) for i in colors]
 
+
 def generate_color_pickle():
+    """
+    Takes the SILVA QIIME formatted taxonomy text file and assigns a unique colour to every single entry.
+    Drops a pickled dictionary of {organism:color} associations onto the NAS for usage whenever necessary.
+    :return:
+    """
     taxonomy_file = '/mnt/nas/Databases/16S/Silva/qiime2/SILVA_128_QIIME_release/taxonomy/taxonomy_all/99/consensus_taxonomy_all_levels.txt'
     f = open(taxonomy_file, 'r')
     curated_tax = []
 
+    # Extract text from each taxon
     levels_range = [x for x in range(15)]
-
     for line in f.readlines():
+        # Strip ID
         line = line.split('\t', 1)[1]
+        # Strip all taxonomic level delineations (i.e. D_0__)
         for level in levels_range:
             line = line.replace('D_{}__'.format(str(level)), '')
+        # Cleanup
         all_tax = line.split(';')
         for tax in all_tax:
             tax = tax.strip()
             if tax is not '':
                 curated_tax.append(tax)
+        # Reduce list down to only unique entries
         curated_tax = list(set(curated_tax))
 
+    # Associate a unique color with each entry
     colors = get_spaced_colors(len(curated_tax))
-
     colordict = {}
     for l, c in zip(curated_tax, colors):
         colordict[l] = c
 
+    # Manual additions
     colordict['Unassigned'] = 'grey'
     colordict['Unclassified'] = 'grey'
 
+    # Save the dictionary as a pickle for later reference
     pickle.dump(colordict,
                 open("/mnt/nas/Redmine/QIIME2_CondaEnv/qiimegraph_taxonomic_color_dictionary_V2.pickle",
                      "wb"))
@@ -434,7 +444,6 @@ def extract_viz_csv(input_path, out_dir):
     return out_file
 
 
-# TODO: Implement taxonomic_level and filter
 @click.command()
 @click.option('-i', '--input_file',
               type=click.Path(exists=True),

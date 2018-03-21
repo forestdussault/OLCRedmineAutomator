@@ -32,7 +32,6 @@ def qiimegraph(redmine_instance, issue, work_dir, description):
     issue = pickle.load(open(issue, 'rb'))
     description = pickle.load(open(description, 'rb'))
 
-
     try:
         # Download the attached taxonomy_barplot.qzv
         redmine_instance.issue.update(resource_id=issue.id, notes='Initiated QIIMEGRAPH...')
@@ -54,7 +53,6 @@ def qiimegraph(redmine_instance, issue, work_dir, description):
             return
 
         # DESCRIPTION PARSING
-
         # Taxonomy
         taxonomic_level = description[0].lower().strip()
 

@@ -22,8 +22,8 @@ def qiimegraph(redmine_instance, issue, work_dir, description):
 
     Example:
 
-    Family
     None
+    Family
     SP1,SP2,SP3
     SP4,SP5,SP6
     """
@@ -31,7 +31,6 @@ def qiimegraph(redmine_instance, issue, work_dir, description):
     redmine_instance = pickle.load(open(redmine_instance, 'rb'))
     issue = pickle.load(open(issue, 'rb'))
     description = pickle.load(open(description, 'rb'))
-
 
     try:
         # Download the attached taxonomy_barplot.qzv
@@ -54,7 +53,6 @@ def qiimegraph(redmine_instance, issue, work_dir, description):
             return
 
         # DESCRIPTION PARSING
-
         # Taxonomy
         taxonomic_level = description[0].lower().strip()
 

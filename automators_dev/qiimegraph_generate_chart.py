@@ -1,7 +1,6 @@
 from collections import OrderedDict
 import os
 import re
-import glob
 import click
 import pickle
 import qiime2
@@ -295,7 +294,7 @@ def paired_multi_pie_charts(samples, out_dir, filtering):
         elif n_samples < 4:
             x_counter += 1
 
-    # Sloppy way of naming the files. TODO: Revisit this.
+    # File naming
     prepend = ''
     for key in samples:
         prepend += key
@@ -308,7 +307,7 @@ def paired_multi_pie_charts(samples, out_dir, filtering):
         outfile = os.path.join(out_dir, '{}_{}_plot.png'.format(prepend, TAXONOMIC_LEVEL.capitalize()))
 
     # Save the file (set transparent=True if you want to eliminate the background)
-    plt.savefig(outfile, bbox_inches='tight')
+    plt.savefig(outfile, bbox_inches='tight', transparent=True)
 
     return outfile
 
@@ -360,50 +359,50 @@ def get_spaced_colors(n):
 
 def generate_color_pickle():
     """
-    Generate a new color dictionary whenever necessary.
-    Not all OTUs are covered - I should probably just pull from Silva...
+    Takes the SILVA QIIME formatted taxonomy text file and assigns a unique colour to every single entry.
+    Drops a pickled dictionary of {organism:color} associations onto the NAS for usage whenever necessary.
+    :return:
     """
-    phylums = glob.glob('/mnt/nas/Databases/GenBank/typestrains/Bacteria/*/*')
-    classes = glob.glob('/mnt/nas/Databases/GenBank/typestrains/Bacteria/*/*/*')
-    orders = glob.glob('/mnt/nas/Databases/GenBank/typestrains/Bacteria/*/*/*/*')
-    families = glob.glob('/mnt/nas/Databases/GenBank/typestrains/Bacteria/*/*/*/*')
-    genuses = glob.glob('/mnt/nas/Databases/GenBank/typestrains/Bacteria/*/*/*/*/*')
+    taxonomy_file = '/mnt/nas/Databases/16S/Silva/qiime2/SILVA_128_QIIME_release/taxonomy/taxonomy_all/99/consensus_taxonomy_all_levels.txt'
+    f = open(taxonomy_file, 'r')
+    curated_tax = []
 
-    mega_tax = []
-    mega_tax.extend(phylums)
-    mega_tax.extend(classes)
-    mega_tax.extend(orders)
-    mega_tax.extend(families)
-    mega_tax.extend(genuses)
+    # Extract text from each taxon
+    levels_range = [x for x in range(15)]
+    for line in f.readlines():
+        # Strip ID
+        line = line.split('\t', 1)[1]
+        # Strip all taxonomic level delineations (i.e. D_0__)
+        for level in levels_range:
+            line = line.replace('D_{}__'.format(str(level)), '')
+        # Cleanup
+        all_tax = line.split(';')
+        for tax in all_tax:
+            tax = tax.strip()
+            if tax is not '':
+                curated_tax.append(tax)
+        # Reduce list down to only unique entries
+        curated_tax = list(set(curated_tax))
 
-    filtered_mega_tax = []
-    for thing in mega_tax:
-        if not thing.endswith('.gz'):
-            filtered_mega_tax.append(os.path.basename(thing))
-
-    len(filtered_mega_tax)
-
-    colors = get_spaced_colors(len(filtered_mega_tax))
-
+    # Associate a unique color with each entry
+    colors = get_spaced_colors(len(curated_tax))
     colordict = {}
-    for l, c in zip(filtered_mega_tax, colors):
+    for l, c in zip(curated_tax, colors):
         colordict[l] = c
 
-    # manual additions
-    colordict['Hafnia-Obesumbacterium'] = 'green'
-    colordict['Enterobacteriales'] = 'lightblue'
+    # Manual additions
     colordict['Unassigned'] = 'grey'
     colordict['Unclassified'] = 'grey'
-    colordict['Escherichia-Shigella'] = 'pink'
-    colordict['D_4__Enterobacteriaceae'] = 'lightgreen'
-    colordict['D_3__Phaseolus acutifolius (tepary bean)'] = 'purple'
 
-    import pickle
-    pickle.dump(colordict, open("/mnt/nas/Redmine/QIIME2_CondaEnv/qiimegraph_taxonomic_color_dictionary.pickle", "wb"))
+    # Save the dictionary as a pickle for later reference
+    pickle.dump(colordict,
+                open("/mnt/nas/Redmine/QIIME2_CondaEnv/qiimegraph_taxonomic_color_dictionary_V2.pickle",
+                     "wb"))
 
 
 def read_color_pickle():
-    colordict = pickle.load(open("/mnt/nas/Redmine/QIIME2_CondaEnv/qiimegraph_taxonomic_color_dictionary.pickle", "rb"))
+    colordict = pickle.load(open("/mnt/nas/Redmine/QIIME2_CondaEnv/qiimegraph_taxonomic_color_dictionary_V2.pickle",
+                                 "rb"))
     return colordict
 
 
@@ -445,7 +444,6 @@ def extract_viz_csv(input_path, out_dir):
     return out_file
 
 
-# TODO: Implement taxonomic_level and filter
 @click.command()
 @click.option('-i', '--input_file',
               type=click.Path(exists=True),
