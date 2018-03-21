@@ -386,11 +386,13 @@ def generate_color_pickle():
     colordict['Unclassified'] = 'grey'
 
     pickle.dump(colordict,
-                open("/mnt/nas/Redmine/QIIME2_CondaEnv/qiimegraph_taxonomic_color_dictionary_V2.pickle", "wb"))
+                open("/mnt/nas/Redmine/QIIME2_CondaEnv/qiimegraph_taxonomic_color_dictionary_V2.pickle",
+                     "wb"))
 
 
 def read_color_pickle():
-    colordict = pickle.load(open("/mnt/nas/Redmine/QIIME2_CondaEnv/qiimegraph_taxonomic_color_dictionary.pickle", "rb"))
+    colordict = pickle.load(open("/mnt/nas/Redmine/QIIME2_CondaEnv/qiimegraph_taxonomic_color_dictionary_V2.pickle",
+                                 "rb"))
     return colordict
 
 
