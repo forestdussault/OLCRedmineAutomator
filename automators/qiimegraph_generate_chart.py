@@ -309,7 +309,7 @@ def paired_multi_pie_charts(samples, out_dir, filtering):
         outfile = os.path.join(out_dir, '{}_{}_plot.png'.format(prepend, TAXONOMIC_LEVEL.capitalize()))
 
     # Save the file (set transparent=True if you want to eliminate the background)
-    plt.savefig(outfile, bbox_inches='tight')
+    plt.savefig(outfile, bbox_inches='tight', transparent=True)
 
     return outfile
 
@@ -358,49 +358,35 @@ def get_spaced_colors(n):
 
     return [((int(i[:2], 16)) / 255, (int(i[2:4], 16)) / 255, (int(i[4:], 16) / 255)) for i in colors]
 
-
 def generate_color_pickle():
-    """
-    Generate a new color dictionary whenever necessary.
-    Not all OTUs are covered - I should probably just pull from Silva...
-    """
-    phylums = glob.glob('/mnt/nas/Databases/GenBank/typestrains/Bacteria/*/*')
-    classes = glob.glob('/mnt/nas/Databases/GenBank/typestrains/Bacteria/*/*/*')
-    orders = glob.glob('/mnt/nas/Databases/GenBank/typestrains/Bacteria/*/*/*/*')
-    families = glob.glob('/mnt/nas/Databases/GenBank/typestrains/Bacteria/*/*/*/*')
-    genuses = glob.glob('/mnt/nas/Databases/GenBank/typestrains/Bacteria/*/*/*/*/*')
+    taxonomy_file = '/mnt/nas/Databases/16S/Silva/qiime2/SILVA_128_QIIME_release/taxonomy/taxonomy_all/99/consensus_taxonomy_all_levels.txt'
+    f = open(taxonomy_file, 'r')
+    curated_tax = []
 
-    mega_tax = []
-    mega_tax.extend(phylums)
-    mega_tax.extend(classes)
-    mega_tax.extend(orders)
-    mega_tax.extend(families)
-    mega_tax.extend(genuses)
+    levels_range = [x for x in range(15)]
 
-    filtered_mega_tax = []
-    for thing in mega_tax:
-        if not thing.endswith('.gz'):
-            filtered_mega_tax.append(os.path.basename(thing))
+    for line in f.readlines():
+        line = line.split('\t', 1)[1]
+        for level in levels_range:
+            line = line.replace('D_{}__'.format(str(level)), '')
+        all_tax = line.split(';')
+        for tax in all_tax:
+            tax = tax.strip()
+            if tax is not '':
+                curated_tax.append(tax)
+        curated_tax = list(set(curated_tax))
 
-    len(filtered_mega_tax)
-
-    colors = get_spaced_colors(len(filtered_mega_tax))
+    colors = get_spaced_colors(len(curated_tax))
 
     colordict = {}
-    for l, c in zip(filtered_mega_tax, colors):
+    for l, c in zip(curated_tax, colors):
         colordict[l] = c
 
-    # manual additions
-    colordict['Hafnia-Obesumbacterium'] = 'green'
-    colordict['Enterobacteriales'] = 'lightblue'
     colordict['Unassigned'] = 'grey'
     colordict['Unclassified'] = 'grey'
-    colordict['Escherichia-Shigella'] = 'pink'
-    colordict['D_4__Enterobacteriaceae'] = 'lightgreen'
-    colordict['D_3__Phaseolus acutifolius (tepary bean)'] = 'purple'
 
-    import pickle
-    pickle.dump(colordict, open("/mnt/nas/Redmine/QIIME2_CondaEnv/qiimegraph_taxonomic_color_dictionary.pickle", "wb"))
+    pickle.dump(colordict,
+                open("/mnt/nas/Redmine/QIIME2_CondaEnv/qiimegraph_taxonomic_color_dictionary_V2.pickle", "wb"))
 
 
 def read_color_pickle():

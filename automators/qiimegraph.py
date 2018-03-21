@@ -22,8 +22,8 @@ def qiimegraph(redmine_instance, issue, work_dir, description):
 
     Example:
 
-    Family
     None
+    Family
     SP1,SP2,SP3
     SP4,SP5,SP6
     """
