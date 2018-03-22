@@ -25,93 +25,41 @@ to the OLC Slurm cluster for each respective job type is also displayed.
 | CloseRelatives   | 48   |  192     |
 
 
-### Tool Descriptions (Work in progress)
-Unless otherwise stated, the **Usage** section of each tool description
-provides an example of the input to provide in a newly created Redmine
-issue's description field. The name of the requested tool must be
-specified in the subject line of the issue.
-
-#### Strainmash
-**Description:** Reads a list of SeqIDs from a Redmine issue and
-calls Mash for each against a sketch of the entire GenBank
-strain database (Up to date as of Dec. 01, 2017).
-Returns a formatted Mash.screen output file per SeqID.
-
-**Usage:**
-```
-2017-SEQ-0918
-2017-SEQ-0919
-2017-SEQ-0920
-2017-SEQ-0921
-```
-
----
-#### Diversitree
-**Description:** Takes an integer *n* and a list of SeqIDs from a Redmine issue.
-This program will select the *n* most representative strains from the given list of SeqIDs.
-
-**Usage:**
-```
-2
-2017-SEQ-0918
-2017-SEQ-0919
-2017-SEQ-0920
-2017-SEQ-0921
-```
-
----
-#### AutoCLARK
-**Description:**
-
-**Usage:**
-
----
-#### CloseRelatives
-**Description:**
-
-**Usage:**
-
----
-#### PlasmidExtractor
-**Description:** Takes a list of SeqIDs and runs PlasmidExtractor on each sample.
-For details on the method, see __https://lowandrew.github.io/Plasmid_Assembler/__
-
-**Usage:**
-```
-2017-SEQ-0918
-2017-SEQ-0919
-2017-SEQ-0920
-2017-SEQ-0921
-```
-
----
-#### WGSAssembly
-**Description:**
-
-**Usage:**
-
----
-#### SNVPHyl
-**Description:**
-
-**Usage:**
-
----
-
-
 ### Internal Notes
-1. Log into the head node (ubuntu@192.168.1.26)
+The OLCRedmineAutomator is constantly running on the OLC head node (ubuntu@192.168.1.5).
+To access recent output from the production log, type `redminelog` into the console.
+Similarly, `redminelog-dev` will provide output from the development instance.
 
+Production instance: https://redmine.biodiversity.agr.gc.ca/projects/cfia/issues
+Development instance: http://192.168.1.2:8080/
+
+#### Supervisor notes
+The automator is controlled through a supervisor on the head node.
+Configuration scripts for the supervisor can be found at `/etc/supervisor/conf.d`
+
+Log files for STDERR and STDOUT can be found at the following locations:
+- `/var/log/olcredmineautomator.err.log`
+- `/var/log/olcredmineautomator.out.log`
+
+If at any time an update is needed on the supervisor scripts,
+register the changes with the following commands:
+```
+sudo supervisorctl reread
+sudo supervisorctl update
+```
+
+#### Manual operation
+1. Log into the head node (ubuntu@192.168.1.5)
 2. Activate the virtual environment
     - ```source /mnt/nas/Redmine/.virtualenvs/OLCRedmineAutomator/bin/activate```
-
 3. Call automation script
     - ```python /mnt/nas/Redmine/OLCRedmineAutomator/api.py 2> /dev/null```
-
 4. Enjoy Redmine automation
 
+
+#### Setup
 Running this program requires a *settings.py* file that is not included in
-this repository for security. Here's a censored example of setup.py:
+this repository for security. Here's a censored example of settings.py:
 
 ```
 API_KEY = 'super_secret'
