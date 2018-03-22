@@ -23,6 +23,8 @@ to the OLC Slurm cluster for each respective job type is also displayed.
 | PlasmidExtractor | 48   |  192     |
 | Merge            | 48   |  192     |
 | CloseRelatives   | 48   |  192     |
+| AutoROGA         | 1    |  1       |
+| QIIMEgraph       | 1    |  1       |
 
 
 ### Internal Notes
