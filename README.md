@@ -50,6 +50,13 @@ sudo supervisorctl reread
 sudo supervisorctl update
 ```
 
+To account for intermittent connectivity issues with the Redmine instances,
+there is a cronjob that regularly restarts the supervisor service.
+This may be edited on the head node with the following command:
+```
+sudo crontab -e
+```
+
 #### Manual operation
 1. Log into the head node (ubuntu@192.168.1.5)
 2. Activate the virtual environment
