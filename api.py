@@ -9,14 +9,15 @@ from settings import AUTOMATOR_KEYWORDS, API_KEY, BIO_REQUESTS_DIR
 
 def redmine_setup(api_key, redmine_url):
     """
-    :param api_key: API key available from your Redmine user account settings. Stored in settings.py.
+    :param api_key: API key available from your Redmine user account settings. Stored in settings.py
+    :param redmine_url: string containing URL to Redmine instance
     :return: instantiated Redmine API object
     """
     redmine = Redmine(redmine_url,
                       key=api_key,
                       requests={
                           'verify': False,
-                          'timeout':10,
+                          'timeout': 10,
                       })
     return redmine
 
@@ -24,7 +25,8 @@ def redmine_setup(api_key, redmine_url):
 def retrieve_issues(redmine_instance, project_id):
     """
     :param redmine_instance: instantiated Redmine API object
-    :return: returns an object containing all issues for OLC CFIA (http://redmine.biodiversity.agr.gc.ca/projects/cfia/)
+    :param project_id: string ID for the project within the Redmine instance to retrieve issues from
+    :return: returns an object containing all issues for requested project ID
     """
     issues = redmine_instance.issue.filter(project_id=project_id)
     return issues
@@ -176,6 +178,7 @@ def submit_slurm_job(redmine_instance, issue, work_dir, cmd, job_type, cpu_count
     :param issue: object pulled from Redmine instance
     :param work_dir: string path to working directory for Redmine job
     :param cmd: string containing bash command
+    :param job_type: string containing job type
     :param cpu_count: number of CPUs to allocate for slurm job
     :param memory: memory in MB to allocate for slurm job
     """
@@ -235,7 +238,7 @@ def main():
         format='\033[92m \033[1m %(asctime)s \033[0m %(message)s ',
         level=logging.INFO,
         datefmt='%Y-%m-%d %H:%M:%S',
-        stream=sys.stdout) # Defaults to sys.stderr
+        stream=sys.stdout)  # Defaults to sys.stderr
 
     # Log into Redmine
     redmine = redmine_setup(api_key=API_KEY,
