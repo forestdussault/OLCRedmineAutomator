@@ -61,8 +61,7 @@ def plasmidextractor_redmine(redmine_instance, issue, work_dir, description):
           '-i {raw_reads_folder} ' \
           '-o {output_folder} ' \
           '-p {plasmid_db} ' \
-          '-d {amr_db}'.format(activate=activate,
-                               plasmid_extractor_py=plasmid_extractor_py,
+          '-d {amr_db}'.format(plasmid_extractor_py=plasmid_extractor_py,
                                raw_reads_folder=raw_reads_folder,
                                output_folder=output_folder,
                                plasmid_db=plasmid_db,
@@ -80,9 +79,9 @@ def plasmidextractor_redmine(redmine_instance, issue, work_dir, description):
 
     # Zip output
     output_filename = 'PlasmidExtractor_output'
-    zip_filepath = zip_folder(results_path = output_folder,
-                              output_dir = work_dir,
-                              output_filename = output_filename)
+    zip_filepath = zip_folder(results_path=output_folder,
+                              output_dir=work_dir,
+                              output_filename=output_filename)
     zip_filepath += '.zip'
 
     # Prepare upload
