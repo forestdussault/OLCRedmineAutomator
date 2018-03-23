@@ -1,10 +1,7 @@
 import os
 import glob
 import click
-import ftplib
 import pickle
-import shutil
-from automator_settings import FTP_USERNAME, FTP_PASSWORD
 
 
 @click.command()
@@ -49,8 +46,13 @@ def metadataretrieve_redmine(redmine_instance, issue, work_dir, description):
                     x = lines[i].split(',')
                     if x[0] in seqid_list:  # First entry in the row should be the SEQID.
                         with open(os.path.join(work_dir, 'combinedMetadata.csv'), 'a+') as f:
-                            f.write(lines[i])  # Might have to add a newline? Don't think so.
+                            f.write(lines[i])
+                    seqid_list.remove(x[0])
 
+        if len(seqid_list) > 0:
+            redmine_instance.issue.update(resource_id=issue.id,
+                                          notes='WARNING: Could not find metadata for the following SEQIDs: '
+                                                '{}'.format(seqid_list))
         # Now upload the combinedMetadata sheet created to Redmine.
         output_list = list()
         output_dict = dict()
