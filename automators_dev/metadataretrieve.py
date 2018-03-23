@@ -1,7 +1,6 @@
 import os
 import glob
 import click
-import csv
 import ftplib
 import pickle
 import shutil
@@ -45,11 +44,20 @@ def metadataretrieve_redmine(redmine_instance, issue, work_dir, description):
 
         for metadata_sheet in metadata_sheets:
             with open(metadata_sheet) as csvfile:
-                reader = csv.DictReader(csvfile)
-                for row in reader:
-                    if row['SampleName'] in seqid_list:
-                        with open(os.path.join(work_dir, 'combinedMetadata.csv'), 'a+') as f:
-                            f.write(row)
+                lines = csvfile.readlines()
+                for i in range(1, len(lines)):
+                    x = lines[i].split(',')
+                    if x[0] in seqid_list:  # First entry in the row should be the SEQID.
+                        f.write(lines[i])  # Might have to add a newline? Don't think so.
+
+        # Now upload the combinedMetadata sheet created to Redmine.
+        output_list = list()
+        output_dict = dict()
+        output_dict['path'] = os.path.join(work_dir, 'combinedMetadata.csv')
+        output_dict['filename'] = 'combinedMetadata.csv'
+        output_list.append(output_dict)
+        redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=4,
+                                      notes='Metadata Retrieve Complete.')
 
     except Exception as e:
         redmine_instance.issue.update(resource_id=issue.id,
