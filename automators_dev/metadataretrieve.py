@@ -48,7 +48,8 @@ def metadataretrieve_redmine(redmine_instance, issue, work_dir, description):
                 for i in range(1, len(lines)):
                     x = lines[i].split(',')
                     if x[0] in seqid_list:  # First entry in the row should be the SEQID.
-                        f.write(lines[i])  # Might have to add a newline? Don't think so.
+                        with open(os.path.join(work_dir, 'combinedMetadata.csv'), 'a+') as f:
+                            f.write(lines[i])  # Might have to add a newline? Don't think so.
 
         # Now upload the combinedMetadata sheet created to Redmine.
         output_list = list()
