@@ -33,6 +33,7 @@ To access recent output from the production log, type `redminelog` into the cons
 Similarly, `redminelog-dev` will provide output from the development instance.
 
 Production instance: https://redmine.biodiversity.agr.gc.ca/projects/cfia/issues
+
 Development instance: http://192.168.1.2:8080/
 
 #### Supervisor notes
