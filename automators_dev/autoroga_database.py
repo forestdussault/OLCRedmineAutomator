@@ -19,7 +19,7 @@ def connect(user, password, db, host='192.168.1.5', port=5432):
 
 
 def update_db(date, year, genus, lab, source, amendment_flag, amended_id):
-    con, meta = connect(user=POSTGRES_USERNAME, password=POSTGRES_PASSWORD, db='autoroga')
+    con, meta = connect(user=POSTGRES_USERNAME, password=POSTGRES_PASSWORD, db='autorogadev')  # NOTE db=autorogadev
 
     ROGA_ID_SEQ = sa.Sequence('roga_id_seq')
 
