@@ -1,5 +1,6 @@
 import os
 import glob
+import collections
 import pandas as pd
 from automator_settings import ASSEMBLIES_FOLDER
 
@@ -35,7 +36,9 @@ def create_report_dictionary(report_list, seq_list, id_column='SeqID'):
             if seq in samples.values:
                 # Associate dataframe with sampleID
                 report_dict[seq] = df
-    return report_dict
+
+    ordered_dict = collections.OrderedDict(sorted(report_dict.items()))
+    return ordered_dict
 
 
 def get_combined_metadata(seq_list):
