@@ -221,8 +221,8 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
 
     # PAGE SETUP
     geometry_options = {"tmargin": "2cm",
-                        "lmargin": "1.8cm",
-                        "rmargin": "1.8cm",
+                        "lmargin": "1cm",
+                        "rmargin": "1cm",
                         "headsep": "1cm"}
 
     doc = pl.Document(page_numbers=False, geometry_options=geometry_options)

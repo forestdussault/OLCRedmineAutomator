@@ -194,7 +194,7 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
         }
     ]
 
-    redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=4,
+    redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=3,
                                   notes='Generated ROGA successfully. Completed PDF report is attached.')
 
 
@@ -221,8 +221,8 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
 
     # PAGE SETUP
     geometry_options = {"tmargin": "2cm",
-                        "lmargin": "1.8cm",
-                        "rmargin": "1.8cm",
+                        "lmargin": "1cm",
+                        "rmargin": "1cm",
                         "headsep": "1cm"}
 
     doc = pl.Document(page_numbers=False, geometry_options=geometry_options)
@@ -390,7 +390,7 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
                                        )
 
             with doc.create(pl.Subsection('GeneSeekr Analysis', numbering=False)) as genesippr_section:
-                with doc.create(pl.Tabular('|c|c|c|c|c|c|c|')) as table:
+                with doc.create(pl.Tabular(table_spec='|c|c|c|c|c|c|c|', col_space='')) as table:
                     # Header
                     table.add_hline()
                     table.add_row(genesippr_table_columns)
