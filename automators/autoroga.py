@@ -415,7 +415,7 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
                         verotoxin = df.loc[df['SeqID'] == sample_id]['Vtyper_Profile'].values[0]
 
                         # MLST/rMLST
-                        mlst = df.loc[df['SeqID'] == sample_id]['MLST_Result'].values[0]
+                        mlst = df.loc[df['SeqID'] == sample_id]['MLST_Result'].values[0].replace('-', 'New')
                         rmlst = df.loc[df['SeqID'] == sample_id]['rMLST_Result'].values[0].replace('-', 'New')
 
                         marker_list = df.loc[df['SeqID'] == sample_id]['GeneSeekr_Profile'].values[0]
@@ -459,7 +459,7 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
                         genus = df.loc[df['SeqID'] == sample_id]['Genus'].values[0]
 
                         # MLST/rMLST
-                        mlst = df.loc[df['SeqID'] == sample_id]['MLST_Result'].values[0]
+                        mlst = df.loc[df['SeqID'] == sample_id]['MLST_Result'].values[0].replace('-', 'New')
                         rmlst = df.loc[df['SeqID'] == sample_id]['rMLST_Result'].values[0].replace('-', 'New')
 
                         # Markers
@@ -504,7 +504,7 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
                         lsts_id = df.loc[df['SeqID'] == sample_id]['SampleName'].values[0]
 
                         # MLST/rMLST
-                        mlst = df.loc[df['SeqID'] == sample_id]['MLST_Result'].values[0]
+                        mlst = df.loc[df['SeqID'] == sample_id]['MLST_Result'].values[0].replace('-', 'New')
                         rmlst = df.loc[df['SeqID'] == sample_id]['rMLST_Result'].values[0].replace('-', 'New')
 
                         # Serovar
