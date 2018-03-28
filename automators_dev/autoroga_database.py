@@ -52,7 +52,7 @@ def update_db(date, year, genus, lab, source, amendment_flag, amended_id):
         next_val = 1
 
     # Create ROGA ID
-    roga_id = year + '-ROGA-' + '{:04d}'.format(next_val)
+    roga_id = year + '-ROGA-DEV-' + '{:04d}'.format(next_val)
 
     # Insert new row into autoroga_project_table table
     ins = autoroga_project_table.insert().values(roga_id=roga_id, genus=genus, date=date, lab=lab, source=source,
