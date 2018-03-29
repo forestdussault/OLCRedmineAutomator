@@ -640,6 +640,7 @@ def produce_header_footer():
     # Footer
     with header.create(pl.Foot("C")):
         with header.create(pl.Tabular('lcr')) as table:
+            table.add_row('', bold('Not valid for official use - this is a DEVELOPMENT version of an AutoROGA report.'), '')
             table.add_row('', bold('Data interpretation guidelines can be found in RDIMS document ID: 10401305'), '')
             table.add_row('', bold('This report was generated with OLC AutoROGA v0.0.1'), '')
     return header
