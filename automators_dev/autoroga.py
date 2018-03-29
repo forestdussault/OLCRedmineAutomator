@@ -265,9 +265,7 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
             all_vt = True
 
     elif genus == 'Listeria':
-        validated_listeria_dict = extract_report_data.validate_mash(seq_list,
-                                                                    metadata_reports,
-                                                                    'Listeria monocytogenes')
+        validated_listeria_dict = extract_report_data.validate_listeria(seq_list, metadata_reports)
         mono_list = []
         for key, value in validated_listeria_dict.items():
             mono_list.append(value)
@@ -275,9 +273,7 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
             all_mono = True
 
     elif genus == 'Salmonella':
-        validated_salmonella_dict = extract_report_data.validate_mash(seq_list,
-                                                                      metadata_reports,
-                                                                      'Salmonella enterica')
+        validated_salmonella_dict = extract_report_data.validate_salmonella(seq_list, metadata_reports)
         enterica_list = []
         for key, value in validated_salmonella_dict.items():
             enterica_list.append(value)
@@ -344,7 +340,7 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
 
             if genus == 'Escherichia':
                 if all_uida:
-                    summary.append('All of the following strains are confirmed as ')
+                    summary.append('The following strains are confirmed as ')
                     summary.append(italic('Escherichia coli '))
                     summary.append('based on 16S sequence and the presence of marker gene ')
                     summary.append(italic('uidA. '))
@@ -356,13 +352,13 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
                     summary.append('marker gene was not detected. ')
 
                 if all_vt:
-                    summary.append('All strains are confirmed to be verotoxigenic based on presence of the ')
+                    summary.append('All strain(s) are confirmed to be verotoxigenic based on presence of the ')
                     summary.append(italic('vt '))
                     summary.append('marker.')
 
             elif genus == 'Listeria':
                 if all_mono:
-                    summary.append('All of the following strains are confirmed to be ')
+                    summary.append('The following strains are confirmed to be ')
                     summary.append(italic('Listeria monocytogenes '))
                     summary.append('based on GeneSeekr analysis. ')
                 else:
@@ -371,7 +367,7 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
 
             elif genus == 'Salmonella':
                 if all_enterica:
-                    summary.append('All of the following strains are confirmed to be ')
+                    summary.append('The following strains are confirmed to be ')
                     summary.append(italic('Salmonella enterica '))
                     summary.append('based on GeneSeekr analysis. ')
                 else:
@@ -642,7 +638,7 @@ def produce_header_footer():
         with header.create(pl.Tabular('lcr')) as table:
             table.add_row('', bold('Not valid for official use - this is a DEVELOPMENT version of the AutoROGA report.'), '')
             table.add_row('', bold('Data interpretation guidelines can be found in RDIMS document ID: 10401305'), '')
-            table.add_row('', bold('This report was generated with OLC AutoROGA v0.0.1'), '')
+            table.add_row('', bold('This report was generated with OLC AutoROGA v1.0'), '')
     return header
 
 
