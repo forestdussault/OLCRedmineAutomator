@@ -25,6 +25,7 @@ to the OLC Slurm cluster for each respective job type is also displayed.
 | CloseRelatives   | 48   |  192     |
 | AutoROGA         | 1    |  1       |
 | QIIMEgraph       | 1    |  1       |
+| Metadata Retrieve| 1    |  1       |
 
 
 ### Internal Notes
