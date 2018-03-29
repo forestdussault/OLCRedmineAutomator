@@ -117,7 +117,8 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
             return
 
         redmine_instance.issue.update(resource_id=issue.id, status_id=2,
-                                      notes='All validation checks passed - beginning download of sequence files.')
+                                      notes='All validation checks passed - beginning download '
+                                            'and assembly of sequence files.')
 
         # Create the local folder that we'll need.
         lab_id = samplesheet_seqids[0].split('-')[1]
@@ -131,9 +132,9 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
 
         # Download the folder, recursively!
         download_dir(sequence_folder, local_folder)
-        redmine_instance.issue.update(resource_id=issue.id, status_id=2,
-                                      notes='Download complete. Files were downloaded to {}.'
-                                            ' Beginning de novo assembly.'.format(local_folder))
+        # redmine_instance.issue.update(resource_id=issue.id, status_id=2,
+        #                               notes='Download complete. Files were downloaded to {}.'
+        #                                     ' Beginning de novo assembly.'.format(local_folder))
 
         # Once the folder has been downloaded, copy it to the hdfs and start assembling using docker image.
         cmd = 'cp -r {local_folder} /hdfs'.format(local_folder=local_folder)
@@ -173,15 +174,8 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
         output_dict['path'] = os.path.join(work_dir, sequence_folder + '.zip')
         output_dict['filename'] = sequence_folder + '.zip'
         output_list.append(output_dict)
-        redmine_instance.issue.update(resource_id=issue.id, uploads=output_list,
-                                      notes='WGS Assembly Complete!')
-        # Make redmine create an issue for that says that a run has finished and a database entry needs
-        # to be made. assinged_to_id to use is 226. Priority is 3 (High).
-        redmine_instance.issue.update(resource_id=issue.id,
-                                      assigned_to_id=226, priority_id=3,
-                                      subject='WGS Assembly: {}'.format(description[0]), # Add run name to subject
-                                      notes='This run has finished assembly! Please add it to the OLC Database.')
-
+        # redmine_instance.issue.update(resource_id=issue.id, uploads=output_list,
+        #                               notes='WGS Assembly Complete!')
         # Apparently we're also supposed to be uploading assemblies - these will be too big to be Redmine attachments,
         # so we'll need to upload to the ftp.
         folder_to_upload = os.path.join(work_dir, 'reports_and_assemblies')
@@ -203,9 +197,15 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
         f.close()
         s.quit()
 
+        # Make redmine create an issue for that says that a run has finished and a database entry needs
+        # to be made. assinged_to_id to use is 226. Priority is 3 (High).
         redmine_instance.issue.update(resource_id=issue.id,
-                                      notes='Reports and assemblies uploaded to FTP at: ftp://ftp.agr.gc.ca/outgoing/'
+                                      assigned_to_id=226, priority_id=3,
+                                      subject='WGS Assembly: {}'.format(description[0]), # Add run name to subject
+                                      notes='This run has finished assembly! Please add it to the OLC Database.\n'
+                                            'Reports and assemblies uploaded to FTP at: ftp://ftp.agr.gc.ca/outgoing/'
                                             'cfia-ak/{}.zip'.format(issue.id))
+
         # Copy the raw files to the hdfs again, and then we try out the new pipeline.
         cmd = 'cp -r {local_folder} /hdfs'.format(local_folder=local_folder)
         os.system(cmd)
