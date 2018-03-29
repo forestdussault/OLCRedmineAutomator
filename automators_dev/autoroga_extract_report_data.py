@@ -115,28 +115,72 @@ def validate_ecoli(seq_list, metadata_reports):
     return ecoli_seq_status
 
 
-def validate_mash(seq_list, metadata_reports, expected_species):
+def validate_salmonella(seq_list, metadata_reports):
     """
-    Takes a species name as a string (i.e. 'Salmonella enterica') and creates a dictionary with keys for each Seq ID
-    and boolean values if the value pulled from MASH_ReferenceGenome matches the string or not
-    :param seq_list: List of OLC Seq IDs
-    :param metadata_reports: Dictionary retrieved from get_combined_metadata()
-    :param expected_species: String containing expected species
-    :return: Dictionary with Seq IDs as keys and True/False as values
+    Checks combined metadata for presence of invA or stn in the GeneSeekr_Profile column
+    :param seq_list:
+    :param metadata_reports:
+    :return: dict with pair of SeqID:boolean where True means GeneSeekr confirms the identity
     """
-    seq_status = {}
+    salmonella_seq_status = {}
 
     for seqid in seq_list:
-        print('Validating MASH reference genome for {} '.format(seqid))
+        print('Validating {} invA OR stn marker detection for Salmonella'.format(seqid))
         df = metadata_reports[seqid]
-        observed_species = df.loc[df['SeqID'] == seqid]['MASH_ReferenceGenome'].values[0]
+        observed_genus = df.loc[df['SeqID'] == seqid]['Genus'].values[0]
+        inva_present = False
+        stn_present = False
 
-        if observed_species == expected_species:
-            seq_status[seqid] = True
+        if observed_genus == 'Salmonella':
+            if 'invA' in df.loc[df['SeqID'] == seqid]['GeneSeekr_Profile'].values[0]:
+                inva_present = True
+            if 'stn' in df.loc[df['SeqID'] == seqid]['GeneSeekr_Profile'].values[0]:
+                stn_present = True
+
+        if stn_present is True or inva_present is True:
+            salmonella_seq_status[seqid] = True
         else:
-            seq_status[seqid] = False
+            salmonella_seq_status[seqid] = False
+    return salmonella_seq_status
 
-    return seq_status
+
+def validate_listeria(seq_list, metadata_reports):
+    """
+    Checks combined metadata for presence of IGS, inlJ, and hlyA in the GeneSeekr_Profile column
+
+    To be confirmed Listeria, the following criteria must be met:
+    IGS present + (inlJ present OR hlyA present) = True
+
+    :param seq_list:
+    :param metadata_reports:
+    :return: dict with pair of SeqID:boolean where True means GeneSeekr confirms the identity
+    """
+    listeria_seq_status = {}
+
+    for seqid in seq_list:
+        print('Validating {} invA OR stn marker detection for Salmonella'.format(seqid))
+        df = metadata_reports[seqid]
+        observed_genus = df.loc[df['SeqID'] == seqid]['Genus'].values[0]
+        igs_present = False
+        hlya_present = False
+        inlj_present = False
+
+        if observed_genus == 'Listeria':
+            if 'IGS' in df.loc[df['SeqID'] == seqid]['GeneSeekr_Profile'].values[0]:
+                igs_present = True
+            if 'hlyA' in df.loc[df['SeqID'] == seqid]['GeneSeekr_Profile'].values[0]:
+                hlya_present = True
+            if 'inlj' in df.loc[df['SeqID'] == seqid]['GeneSeekr_Profile'].values[0]:
+                inlj_present = True
+
+        if igs_present is True:
+            if hlya_present is True or inlj_present is True:
+                listeria_seq_status[seqid] = True
+            else:
+                listeria_seq_status[seqid] = False
+        else:
+            listeria_seq_status[seqid] = False
+    return listeria_seq_status
 
 
 def generate_validated_list(seq_list, genus):
