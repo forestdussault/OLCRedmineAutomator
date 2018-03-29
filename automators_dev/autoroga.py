@@ -360,7 +360,7 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
                 if all_mono:
                     summary.append('The following strains are confirmed to be ')
                     summary.append(italic('Listeria monocytogenes '))
-                    summary.append('based on GeneSeekr analysis. ')
+                    summary.append('based on GeneSeekr analysis: ')
                 else:
                     summary.append('Some of the following strains could not be confirmed to be ')
                     summary.append(italic('Listeria monocytogenes.'))
@@ -369,7 +369,7 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
                 if all_enterica:
                     summary.append('The following strains are confirmed to be ')
                     summary.append(italic('Salmonella enterica '))
-                    summary.append('based on GeneSeekr analysis. ')
+                    summary.append('based on GeneSeekr analysis: ')
                 else:
                     summary.append('Some of the following strains could not be confirmed to be ')
                     summary.append(italic('Salmonella enterica.'))
