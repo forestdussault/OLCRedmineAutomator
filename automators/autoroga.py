@@ -194,7 +194,7 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
         }
     ]
 
-    redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=4,
+    redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=3,
                                   notes='Generated ROGA successfully. Completed PDF report is attached.')
 
 
@@ -352,7 +352,7 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
                     summary.append('marker gene was not detected. ')
 
                 if all_vt:
-                    summary.append('All strains are confirmed to be verotoxigenic based on presence of the ')
+                    summary.append('All strains(s) are confirmed to be verotoxigenic based on presence of the ')
                     summary.append(italic('vt '))
                     summary.append('marker.')
 
