@@ -376,7 +376,7 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
 
         # ESCHERICHIA TABLE
         if genus == 'Escherichia':
-            genesippr_table_columns = (bold('LSTS ID'),
+            genesippr_table_columns = (bold('ID'),
                                        bold(pl.NoEscape(r'uidA{\footnotesize \textsuperscript {a}}')),
                                        bold(pl.NoEscape(r'Serotype')),
                                        bold(pl.NoEscape(r'Verotoxin Profile')),
@@ -430,7 +430,7 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
 
         # LISTERIA TABLE
         if genus == 'Listeria':
-            genesippr_table_columns = (bold('LSTS ID'),
+            genesippr_table_columns = (bold('ID'),
                                        bold(pl.NoEscape(r'IGS{\footnotesize \textsuperscript {a}}')),
                                        bold(pl.NoEscape(r'hlyA{\footnotesize \textsuperscript {a}}')),
                                        bold(pl.NoEscape(r'inlJ{\footnotesize \textsuperscript {a}}')),
@@ -475,7 +475,7 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
 
         # SALMONELLA TABLE
         if genus == 'Salmonella':
-            genesippr_table_columns = (bold('LSTS ID'),
+            genesippr_table_columns = (bold('ID'),
                                        bold(pl.NoEscape(r'Serovar{\footnotesize \textsuperscript {a}}')),
                                        bold(pl.NoEscape(r'Serogroup{\footnotesize \textsuperscript {a,b}}')),
                                        bold(pl.NoEscape(r'H1{\footnotesize \textsuperscript {a}}')),
@@ -528,7 +528,7 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
                                                        "- indicates marker was not detected")
 
         # SEQUENCE TABLE
-        sequence_quality_columns = (bold('LSTS ID'),
+        sequence_quality_columns = (bold('ID'),
                                     bold(pl.NoEscape(r'Total Length')),
                                     bold(pl.NoEscape(r'Coverage')),
                                     bold(pl.NoEscape(r'GDCS')),
@@ -568,7 +568,7 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
                 table.add_hline()
 
         # PIPELINE METADATA TABLE
-        pipeline_metadata_columns = (bold('LSTS ID'),
+        pipeline_metadata_columns = (bold('ID'),
                                      bold('Seq ID'),
                                      bold('Pipeline Version'),
                                      bold('Database Version'))
