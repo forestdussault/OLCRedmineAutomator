@@ -222,7 +222,7 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
         cmd = 'mv {hdfs_folder} {scratch_folder}'.format(hdfs_folder=os.path.join('/hdfs', sequence_folder),
                                                          scratch_folder='/mnt/scratch/New_Pipeline_Assemblies')
         os.system(cmd)
-        redmine_instance.issue.update(resource_id=issue.id, status_id=4,
+        redmine_instance.issue.update(resource_id=issue.id,
                                       notes='WGS Assembly (new pipeline) complete, results stored on scratch.')
     except Exception as e:
         redmine_instance.issue.update(resource_id=issue.id,
