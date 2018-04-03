@@ -34,7 +34,10 @@ def update_db(date, year, genus, lab, source, amendment_flag, amended_id):
                                           sa.Column('amendment_flag', sa.String(16)),
                                           sa.Column('amended_id', sa.String(64)),
                                           sa.Column('date', sa.Date),
-                                          sa.Column('time', sa.DateTime, default=datetime.datetime.utcnow))
+                                          sa.Column('time', sa.DateTime, default=datetime.datetime.utcnow),
+                                          sa.Column('deletion_date', sa.Date),
+                                          sa.Column('deletion_reason', sa.String(256))
+                                          )
         meta.create_all()
         print('Successfully created autoroga_project_table')
 
@@ -58,5 +61,4 @@ def update_db(date, year, genus, lab, source, amendment_flag, amended_id):
     ins = autoroga_project_table.insert().values(roga_id=roga_id, genus=genus, date=date, lab=lab, source=source,
                                                  amendment_flag=amendment_flag, amended_id=amended_id)
     con.execute(ins)
-
     return roga_id

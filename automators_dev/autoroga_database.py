@@ -34,7 +34,10 @@ def update_db(date, year, genus, lab, source, amendment_flag, amended_id):
                                           sa.Column('amendment_flag', sa.String(16)),
                                           sa.Column('amended_id', sa.String(64)),
                                           sa.Column('date', sa.Date),
-                                          sa.Column('time', sa.DateTime, default=datetime.datetime.utcnow))
+                                          sa.Column('time', sa.DateTime, default=datetime.datetime.utcnow),
+                                          sa.Column('deletion_date', sa.Date),
+                                          sa.Column('deletion_reason', sa.String(256))
+                                          )
         meta.create_all()
         print('Successfully created autoroga_project_table')
 
