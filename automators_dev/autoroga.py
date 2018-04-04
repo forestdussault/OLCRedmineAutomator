@@ -386,7 +386,7 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
                                        )
 
             with doc.create(pl.Subsection('GeneSeekr Analysis', numbering=False)) as genesippr_section:
-                with doc.create(pl.Tabular(table_spec='|c|c|c|c|c|c|c|', col_space='')) as table:
+                with doc.create(pl.Tabular(table_spec='|c|c|c|c|c|c|c|')) as table:
                     # Header
                     table.add_hline()
                     table.add_row(genesippr_table_columns)
