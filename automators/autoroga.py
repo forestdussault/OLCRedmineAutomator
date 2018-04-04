@@ -344,9 +344,8 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
                     summary.append('marker gene was not detected. ')
 
                 if all_vt:
-                    summary.append('All strains(s) are confirmed to be verotoxigenic based on presence of the ')
-                    summary.append(italic('vt '))
-                    summary.append('marker.')
+                    summary.append('All strain(s) are confirmed to be VTEC based on detection of probe sequences '
+                                   'indicating the presence of verotoxin genes.')
 
             elif genus == 'Listeria':
                 if all_mono:
