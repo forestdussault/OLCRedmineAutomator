@@ -59,6 +59,7 @@ def update_db(date, year, genus, lab, source, amendment_flag, amended_id):
 
     # Insert new row into autoroga_project_table table
     ins = autoroga_project_table.insert().values(roga_id=roga_id, genus=genus, date=date, lab=lab, source=source,
-                                                 amendment_flag=amendment_flag, amended_id=amended_id)
+                                                 amendment_flag=amendment_flag, amended_id=amended_id,
+                                                 time=datetime.datetime.utcnow())
     con.execute(ins)
     return roga_id
