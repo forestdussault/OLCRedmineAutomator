@@ -58,6 +58,14 @@ def diversitree_redmine(redmine_instance, issue, work_dir, description):
                                                 'try again.'.format(samples=outstr,
                                                                     reference=os.path.split(reference_file)[-1]))
 
+        # Remove distances.tab and sketch.msh from fastas folder, because sometimes they make
+        # parsnp crash. Other times they don't. I have no idea why, so remove just to be safe.
+        try:
+            os.remove(os.path.join(work_dir, 'fastas', 'distances.tab'))
+            os.remove(os.path.join(work_dir, 'fastas', 'sketch.msh'))
+        except OSError:
+            pass
+
         cmd = 'python /mnt/nas/Redmine/OLCRedmineAutomator/automators/sampler.py -i {work_dir} ' \
               '-d {desired_tips} -o {output}'.format(work_dir=os.path.join(work_dir, 'fastas'),
                                                      desired_tips=desired_num_strains,
