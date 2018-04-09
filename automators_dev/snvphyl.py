@@ -43,20 +43,43 @@ def snvphyl_redmine(redmine_instance, issue, work_dir, description):
                                                 ' issue and try again.'.format(len(reference)), status_id=4)
             return
 
-        # Extract our reference file to our working directory.
-        with open(os.path.join(work_dir, 'seqid.txt'), 'w') as f:
-            f.write(reference[0])
+        if reference[0].upper() != 'ATTACHED':
+            # Extract our reference file to our working directory.
+            with open(os.path.join(work_dir, 'seqid.txt'), 'w') as f:
+                f.write(reference[0])
 
-        cmd = 'python2 /mnt/nas/WGSspades/file_extractor.py {}/seqid.txt {} /mnt/nas/'.format(work_dir, work_dir)
-        os.system(cmd)
+            cmd = 'python2 /mnt/nas/WGSspades/file_extractor.py {}/seqid.txt {} /mnt/nas/'.format(work_dir, work_dir)
+            os.system(cmd)
 
-        # Check that the file was successfully extracted. If it wasn't boot the user.
-        if len(glob.glob(os.path.join(work_dir, '*fasta'))) == 0:
-            redmine_instance.issue.update(resource_id=issue.id,
-                                          notes='Error! Could not find the specified reference file.'
-                                                ' Please verify it is a correct SEQID, create a new '
-                                                'issue, and try again.', status_id=4)
-            return
+            # Check that the file was successfully extracted. If it wasn't boot the user.
+            if len(glob.glob(os.path.join(work_dir, '*fasta'))) == 0:
+                redmine_instance.issue.update(resource_id=issue.id,
+                                              notes='Error! Could not find the specified reference file.'
+                                                    ' Please verify it is a correct SEQID, create a new '
+                                                    'issue, and try again.', status_id=4)
+                return
+
+        # If user specified attachment as the reference file, download it to our working directory.
+        else:
+            # Get the attachment ID, and download if it isn't equal to zero (meaning no attachment, so boot user with
+            # appropriate error message)
+            attachment = redmine_instance.issue.get(issue.id, include='attachments')
+            attachment_id = 0
+            for item in attachment.attachments:
+                attachment_id = item.id
+
+            # Download if we found an attachment, and use it as our reference. Otherwise, exit and tell user to try again
+            if attachment_id != 0:
+                attachment = redmine_instance.attachment.get(attachment_id)
+                attachment.download(savepath=work_dir, filename='reference.fasta')
+            else:
+                redmine_instance.issue.update(resource_id=issue.id,
+                                              notes='ERROR: You specified that reference would be in attached file,'
+                                                    ' but no attached file was found. Please create a new issue and '
+                                                    'try again.',
+                                              status_id=4)
+                return
+
 
         # Now extract our query files.
         with open(os.path.join(work_dir, 'seqid.txt'), 'w') as f:
