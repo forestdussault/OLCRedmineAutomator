@@ -214,7 +214,7 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
         cmd = 'docker rm -f cowbat'
         os.system(cmd)
         cmd = 'docker run -i -u $(id -u) -v /mnt/nas:/mnt/nas -v /hdfs:/hdfs --name cowbat --rm cowbat:latest /bin/bash -c ' \
-              '"source activate cowbat && assembly_pipeline.py {hdfs_folder} -r /mnt/nas/assemblydatabases' \
+              '"source activate cowbat && assembly_pipeline.py -s {hdfs_folder} -r /mnt/nas/assemblydatabases' \
               '/0.2.3/databases"'.format(hdfs_folder=os.path.join('/hdfs', sequence_folder))
         os.system(cmd)
 
