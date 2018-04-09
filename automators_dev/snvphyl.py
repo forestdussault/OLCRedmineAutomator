@@ -38,7 +38,7 @@ def snvphyl_redmine(redmine_instance, issue, work_dir, description):
         # Retrieve our reference file. Error user if they selected anything but one reference and don't continue.
         if len(reference) != 1:
             redmine_instance.issue.update(resource_id=issue.id,
-                                          notes='Error! You must specify one reference strain, and you '
+                                          notes='ERROR: You must specify one reference strain, and you '
                                                 'specified {} reference strains. Please create a new'
                                                 ' issue and try again.'.format(len(reference)), status_id=4)
             return
@@ -54,7 +54,7 @@ def snvphyl_redmine(redmine_instance, issue, work_dir, description):
             # Check that the file was successfully extracted. If it wasn't boot the user.
             if len(glob.glob(os.path.join(work_dir, '*fasta'))) == 0:
                 redmine_instance.issue.update(resource_id=issue.id,
-                                              notes='Error! Could not find the specified reference file.'
+                                              notes='ERROR: Could not find the specified reference file.'
                                                     ' Please verify it is a correct SEQID, create a new '
                                                     'issue, and try again.', status_id=4)
                 return
@@ -68,18 +68,17 @@ def snvphyl_redmine(redmine_instance, issue, work_dir, description):
             for item in attachment.attachments:
                 attachment_id = item.id
 
-            # Download if we found an attachment, and use it as our reference. Otherwise, exit and tell user to try again
+            # Download if we found an attachment, and use as our reference. Otherwise, exit and tell user to try again
             if attachment_id != 0:
                 attachment = redmine_instance.attachment.get(attachment_id)
                 attachment.download(savepath=work_dir, filename='reference.fasta')
             else:
                 redmine_instance.issue.update(resource_id=issue.id,
-                                              notes='ERROR: You specified that reference would be in attached file,'
+                                              notes='ERROR: You specified that the reference would be in attached file,'
                                                     ' but no attached file was found. Please create a new issue and '
                                                     'try again.',
                                               status_id=4)
                 return
-
 
         # Now extract our query files.
         with open(os.path.join(work_dir, 'seqid.txt'), 'w') as f:
@@ -166,6 +165,7 @@ def verify_fastqs_present(query_list, fastq_folder):
             missing_fastqs.append(query)
     # Returns list of SEQIDs for which we couldn't find forward and/or reverse reads
     return missing_fastqs
+
 
 if __name__ == '__main__':
     snvphyl_redmine()
