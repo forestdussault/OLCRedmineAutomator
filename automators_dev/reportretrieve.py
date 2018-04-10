@@ -58,8 +58,8 @@ def reportretrieve_redmine(redmine_instance, issue, work_dir, description):
             if os.path.isdir(os.path.join(work_dir, str(issue.id), new_folder_name)):  # Very slim possiblity two folders
                 # could have the same name. This takes care of that. No way there should ever be more than two.
                 new_folder_name = new_folder_name + '_2'
-            cmd = 'cp {report_folder} {new_folder}'.format(report_folder=report_folder[0],
-                                                           new_folder=os.path.join(work_dir, str(issue.id), new_folder_name))
+            cmd = 'cp -r {report_folder} {new_folder}'.format(report_folder=report_folder[0],
+                                                              new_folder=os.path.join(work_dir, str(issue.id), new_folder_name))
             os.system(cmd)
 
         # Now make a zip folder that we'll upload to the FTP.
