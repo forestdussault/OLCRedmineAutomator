@@ -33,9 +33,9 @@ LSTS ID should be parsed from SampleSheet.csv by the COWBAT pipeline, and is ava
 file that is central to this script's extraction of data. The LSTS ID is available under the 'SampleName' column in
 combinedMetadata.csv
 
-TODO: GDCS + GenomeQAML combined metric. Everything must pass in order to be listed as 'PASS'
-TODO: Amendment flag (adds amendment line in summary, takes original report ID as input, generates new report)
 """
+# TODO: GDCS + GenomeQAML combined metric. Everything must pass in order to be listed as 'PASS'
+# TODO: Merge AMR table update (autoroga.py and autoroga_extract_report_data.py) with prod. when combMetadata is ready
 
 lab_info = {
     'GTA': ('2301 Midland Ave., Scarborough, ON, M1P 4R7', '416-952-3203'),
@@ -240,6 +240,8 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
     all_vt = False
     all_mono = False
     all_enterica = False
+    some_vt = False
+    vt_sample_list = []
 
     # SECOND VALIDATION SCREEN
     if genus == 'Escherichia':
@@ -254,6 +256,10 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
             uida_list.append(ecoli_uida_present)
             vt_list.append(ecoli_vt_present)
 
+            # For the AMR table so only vt+ samples are shown
+            if ecoli_vt_present is True:
+                vt_sample_list.append(key)
+
             if not ecoli_uida_present:
                 print('WARNING: uidA not present for {}. Cannot confirm E. coli.'.format(key))
             if not ecoli_vt_present:
@@ -264,6 +270,9 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
             all_uida = True
         if False not in vt_list:
             all_vt = True
+
+        if True in vt_list:
+            some_vt = True
 
     elif genus == 'Listeria':
         validated_listeria_dict = extract_report_data.validate_listeria(seq_list, metadata_reports)
@@ -527,16 +536,74 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
                 create_caption(genesippr_section, 'b', "+ indicates marker presence : "
                                                        "- indicates marker was not detected")
 
-        # SEQUENCE TABLE
-        sequence_quality_columns = (bold('ID'),
-                                    bold(pl.NoEscape(r'Total Length')),
-                                    bold(pl.NoEscape(r'Coverage')),
-                                    bold(pl.NoEscape(r'GDCS')),
-                                    bold(pl.NoEscape(r'Pass/Fail')),
-                                    )
+        # AMR TABLE (VTEC and Salmonella only)
+        create_amr_profile = False  # only create if an AMR profile exists for one of the provided samples
+        amr_samples = []  # keep track of which samples to create rows for
 
+        # Grab AMR profile as a pre-check to see if we should even create the AMR Profile table
+        for sample_id, df in metadata_reports.items():
+            profile = df.loc[df['SeqID'] == sample_id]['AMR_Profile'].values[0]
+            parsed_profile = extract_report_data.parse_amr_profile(profile)
+            if parsed_profile is not None:
+                if genus == 'Salmonella':
+                    amr_samples.append(sample_id)
+                    create_amr_profile = True
+                elif genus == 'Escherichia':
+                    if sample_id in vt_sample_list:  # vt_sample_list contains all vt+ sample IDs
+                        amr_samples.append(sample_id)
+                        create_amr_profile = True
+
+        # Create table
+        if (genus == 'Salmonella' or some_vt is True) and create_amr_profile is True:
+            with doc.create(pl.Subsection('Antimicrobial Resistance Profiling', numbering=False)):
+                with doc.create(pl.Tabular('|c|c|c|c|')) as table:
+                    amr_columns = (bold('ID'),
+                                   bold(pl.NoEscape(r'Resistance')),
+                                   bold(pl.NoEscape(r'Gene')),
+                                   bold(pl.NoEscape(r'Percent Identity'))
+                                   )
+                    # Header
+                    table.add_hline()
+                    table.add_row(amr_columns)
+
+                    for sample_id, df in metadata_reports.items():
+                        if sample_id in amr_samples:
+                            # Grab AMR profile
+                            profile = df.loc[df['SeqID'] == sample_id]['AMR_Profile'].values[0]
+                            # Parse and iterate through profile to generate rows
+                            parsed_profile = extract_report_data.parse_amr_profile(profile)
+                            if parsed_profile is not None:
+                                # Rows
+                                for value in parsed_profile:
+                                    table.add_hline()
+                                    # ID
+                                    lsts_id = df.loc[df['SeqID'] == sample_id]['SampleName'].values[0]
+
+                                    # Resistance
+                                    resistance = value['resistance']
+
+                                    # Gene
+                                    gene = value['gene']
+
+                                    # Identity
+                                    identity = value['identity']
+
+                                    # Add row
+                                    table.add_row((lsts_id, resistance, gene, identity))
+                    # Close off table
+                    table.add_hline()
+
+        # SEQUENCE TABLE
         with doc.create(pl.Subsection('Sequence Quality Metrics', numbering=False)):
             with doc.create(pl.Tabular('|c|c|c|c|c|')) as table:
+                # Columns
+                sequence_quality_columns = (bold('ID'),
+                                            bold(pl.NoEscape(r'Total Length')),
+                                            bold(pl.NoEscape(r'Coverage')),
+                                            bold(pl.NoEscape(r'GDCS')),
+                                            bold(pl.NoEscape(r'Pass/Fail')),
+                                            )
+
                 # Header
                 table.add_hline()
                 table.add_row(sequence_quality_columns)
