@@ -2,7 +2,7 @@ import os
 import glob
 import click
 import pickle
-
+from nastools.nastools import retrieve_nas_files
 
 @click.command()
 @click.option('--redmine_instance', help='Path to pickled Redmine API instance')
@@ -27,18 +27,22 @@ def clark_redmine(redmine_instance, issue, work_dir, description):
             seqids.append(item)
 
         # Write SEQIDs to file to be extracted and CLARKed.
-        with open(os.path.join(work_dir, 'seqid.txt'), 'w') as f:
-            for seqid in seqids:
-                f.write(seqid + '\n')
+        # with open(os.path.join(work_dir, 'seqid.txt'), 'w') as f:
+        #     for seqid in seqids:
+        #         f.write(seqid + '\n')
 
         # If FASTQ, run file linker and then make sure that all FASTQ files requested are present. Warn user if they
         # requested things that we don't have.
         if not fasta:
-            current_dir = os.getcwd()
-            os.chdir('/mnt/nas/MiSeq_Backup')
-            cmd = 'python2 /mnt/nas/MiSeq_Backup/file_linker.py {}/seqid.txt {}'.format(work_dir, work_dir)
-            os.system(cmd)
-            os.chdir(current_dir)
+            retrieve_nas_files(seqids=seqids,
+                               outdir=os.path.join(work_dir, str(issue.id)),
+                               filetype='fastq',
+                               copyflag=False)
+            # current_dir = os.getcwd()
+            # os.chdir('/mnt/nas/MiSeq_Backup')
+            # cmd = 'python2 /mnt/nas/MiSeq_Backup/file_linker.py {}/seqid.txt {}'.format(work_dir, work_dir)
+            # os.system(cmd)
+            # os.chdir(current_dir)
             missing_fastqs = verify_fastq_files_present(seqids, work_dir)
             if missing_fastqs:
                 redmine_instance.issue.update(resource_id=issue.id,
@@ -47,8 +51,12 @@ def clark_redmine(redmine_instance, issue, work_dir, description):
 
         # If it's FASTA, extract them and make sure all are present.
         if fasta:
-            cmd = 'python2 /mnt/nas/WGSspades/file_extractor.py {}/seqid.txt {} /mnt/nas/'.format(work_dir, work_dir)
-            os.system(cmd)
+            retrieve_nas_files(seqids=seqids,
+                               outdir=os.path.join(work_dir, str(issue.id)),
+                               filetype='fasta',
+                               copyflag=False)
+            # cmd = 'python2 /mnt/nas/WGSspades/file_extractor.py {}/seqid.txt {} /mnt/nas/'.format(work_dir, work_dir)
+            # os.system(cmd)
             missing_fastas = verify_fasta_files_present(seqids, work_dir)
             if missing_fastas:
                 redmine_instance.issue.update(resource_id=issue.id,

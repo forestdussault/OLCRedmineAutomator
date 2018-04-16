@@ -3,7 +3,7 @@ import glob
 import click
 import pickle
 from biotools import mash
-
+from nastools.nastools import retrieve_nas_files
 
 @click.command()
 @click.option('--redmine_instance', help='Path to pickled Redmine API instance')
@@ -33,14 +33,17 @@ def diversitree_redmine(redmine_instance, issue, work_dir, description):
             item = description[i].upper()
             seqids.append(item)
 
-        with open(os.path.join(work_dir, 'seqid.txt'), 'w') as f:
-            for seqid in seqids:
-                f.write(seqid + '\n')
+        # with open(os.path.join(work_dir, 'seqid.txt'), 'w') as f:
+        #     for seqid in seqids:
+        #         f.write(seqid + '\n')
 
         # Drop FASTA files into workdir
-        cmd = 'python2 /mnt/nas/WGSspades/file_extractor.py {0}/seqid.txt {0} /mnt/nas/'.format(work_dir)
-        os.system(cmd)
-
+        # cmd = 'python2 /mnt/nas/WGSspades/file_extractor.py {0}/seqid.txt {0} /mnt/nas/'.format(work_dir)
+        # os.system(cmd)
+        retrieve_nas_files(seqids=seqids,
+                           outdir=os.path.join(work_dir, str(issue.id)),
+                           filetype='fasta',
+                           copyflag=False)
         # Run a mash to figure out if any strains are particularly far apart and likely to make PARSNP fail.
         reference_file = glob.glob(os.path.join(work_dir, '*.fasta'))[0]
         bad_fastas = check_distances(reference_file, work_dir)
