@@ -4,6 +4,7 @@ import click
 import ftplib
 import pickle
 import shutil
+from nastools.nastools import retrieve_nas_files
 from automator_settings import FTP_USERNAME, FTP_PASSWORD
 
 
@@ -41,28 +42,37 @@ def externalretrieve_redmine(redmine_instance, issue, work_dir, description):
             elif fastq:
                 fastq_list.append(item)
 
+        # Use NAStools to put files where we need them.
+        retrieve_nas_files(seqids=fasta_list,
+                           outdir=os.path.join(work_dir, str(issue.id)),
+                           filetype='fasta',
+                           copyflag=True)
         # Write SEQIDs to file to be extracted as FASTAs and copy them to the biorequest dir.
-        if len(fasta_list) > 0:
-            with open(os.path.join(work_dir, 'seqid.txt'), 'w') as f:
-                for seqid in fasta_list:
-                    f.write(seqid + '\n')
-            cmd = 'python2 /mnt/nas/WGSspades/file_extractor.py {seqidlist} ' \
-                  '{output_folder} /mnt/nas/'.format(seqidlist=os.path.join(work_dir, 'seqid.txt'),
-                                                     output_folder=os.path.join(work_dir, str(issue.id)))
-            os.system(cmd)
+        # if len(fasta_list) > 0:
+        #     with open(os.path.join(work_dir, 'seqid.txt'), 'w') as f:
+        #         for seqid in fasta_list:
+        #             f.write(seqid + '\n')
+        #     cmd = 'python2 /mnt/nas/WGSspades/file_extractor.py {seqidlist} ' \
+        #           '{output_folder} /mnt/nas/'.format(seqidlist=os.path.join(work_dir, 'seqid.txt'),
+        #                                              output_folder=os.path.join(work_dir, str(issue.id)))
+        #     os.system(cmd)
 
+        retrieve_nas_files(seqids=fastq_list,
+                           outdir=os.path.join(work_dir, str(issue.id)),
+                           filetype='fastq',
+                           copyflag=True)
         # Extract FASTQ files.
-        if len(fastq_list) > 0:
-            with open(os.path.join(work_dir, 'seqid.txt'), 'w') as f:
-                for seqid in fastq_list:
-                    f.write(seqid + '\n')
-            current_dir = os.getcwd()
-            os.chdir('/mnt/nas/MiSeq_Backup')
-            cmd = 'python2 file_extractor.py {seqidlist} ' \
-                  '{output_folder}'.format(seqidlist=os.path.join(work_dir, 'seqid.txt'),
-                                           output_folder=os.path.join(work_dir, str(issue.id)))
-            os.system(cmd)
-            os.chdir(current_dir)
+        # if len(fastq_list) > 0:
+        #     with open(os.path.join(work_dir, 'seqid.txt'), 'w') as f:
+        #         for seqid in fastq_list:
+        #             f.write(seqid + '\n')
+        #     current_dir = os.getcwd()
+        #     os.chdir('/mnt/nas/MiSeq_Backup')
+        #     cmd = 'python2 file_extractor.py {seqidlist} ' \
+        #           '{output_folder}'.format(seqidlist=os.path.join(work_dir, 'seqid.txt'),
+        #                                    output_folder=os.path.join(work_dir, str(issue.id)))
+        #     os.system(cmd)
+        #     os.chdir(current_dir)
 
         # Check that we got all the requested files.
         missing_fastas = check_fastas_present(fasta_list, os.path.join(work_dir, str(issue.id)))
