@@ -33,13 +33,7 @@ def diversitree_redmine(redmine_instance, issue, work_dir, description):
             item = description[i].upper()
             seqids.append(item)
 
-        # with open(os.path.join(work_dir, 'seqid.txt'), 'w') as f:
-        #     for seqid in seqids:
-        #         f.write(seqid + '\n')
-
         # Drop FASTA files into workdir
-        # cmd = 'python2 /mnt/nas/WGSspades/file_extractor.py {0}/seqid.txt {0} /mnt/nas/'.format(work_dir)
-        # os.system(cmd)
         retrieve_nas_files(seqids=seqids,
                            outdir=os.path.join(work_dir, str(issue.id)),
                            filetype='fasta',
@@ -93,6 +87,7 @@ def check_distances(ref_fasta, fasta_folder):
         if item.distance > 0.06:  # May need to adjust this value.
             bad_fastqs.append(item.reference)
     return bad_fastqs
+
 
 if __name__ == '__main__':
     diversitree_redmine()

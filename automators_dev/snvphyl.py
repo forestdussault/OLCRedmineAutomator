@@ -4,6 +4,7 @@ import click
 import pickle
 import shutil
 from biotools import mash
+from nastools.nastools import retrieve_nas_files
 
 
 @click.command()
@@ -45,12 +46,10 @@ def snvphyl_redmine(redmine_instance, issue, work_dir, description):
 
         if reference[0].upper() != 'ATTACHED':
             # Extract our reference file to our working directory.
-            with open(os.path.join(work_dir, 'seqid.txt'), 'w') as f:
-                f.write(reference[0])
-
-            cmd = 'python2 /mnt/nas/WGSspades/file_extractor.py {}/seqid.txt {} /mnt/nas/'.format(work_dir, work_dir)
-            os.system(cmd)
-
+            retrieve_nas_files(seqids=reference,
+                               outdir=work_dir,
+                               filetype='fasta',
+                               copyflag=True)
             # Check that the file was successfully extracted. If it wasn't boot the user.
             if len(glob.glob(os.path.join(work_dir, '*fasta'))) == 0:
                 redmine_instance.issue.update(resource_id=issue.id,
@@ -81,18 +80,10 @@ def snvphyl_redmine(redmine_instance, issue, work_dir, description):
                 return
 
         # Now extract our query files.
-        with open(os.path.join(work_dir, 'seqid.txt'), 'w') as f:
-            for seqid in query_list:
-                f.write(seqid + '\n')
-
-        current_dir = os.getcwd()
-        os.chdir('/mnt/nas/MiSeq_Backup')
-        if not os.path.isdir(os.path.join(work_dir, 'fastqs')):
-            os.makedirs(os.path.join(work_dir, 'fastqs'))
-
-        cmd = 'python2 /mnt/nas/MiSeq_Backup/file_extractor.py {}/seqid.txt {} '.format(work_dir, os.path.join(work_dir, 'fastqs'))
-        os.system(cmd)
-        os.chdir(current_dir)
+        retrieve_nas_files(seqids=query_list,
+                           outdir=os.path.join(work_dir, 'fastqs'),
+                           filetype='fastq',
+                           copyflag=True)
 
         # With our query files extracted, verify that all the SEQIDs the user specified were able to be found.
         missing_fastqs = verify_fastqs_present(query_list, os.path.join(work_dir, 'fastqs'))

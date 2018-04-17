@@ -35,7 +35,7 @@ def clark_redmine(redmine_instance, issue, work_dir, description):
         # requested things that we don't have.
         if not fasta:
             retrieve_nas_files(seqids=seqids,
-                               outdir=os.path.join(work_dir, str(issue.id)),
+                               outdir=work_dir,
                                filetype='fastq',
                                copyflag=False)
             # current_dir = os.getcwd()
