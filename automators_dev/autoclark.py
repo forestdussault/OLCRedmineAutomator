@@ -52,7 +52,7 @@ def clark_redmine(redmine_instance, issue, work_dir, description):
         # If it's FASTA, extract them and make sure all are present.
         if fasta:
             retrieve_nas_files(seqids=seqids,
-                               outdir=os.path.join(work_dir, str(issue.id)),
+                               outdir=work_dir,
                                filetype='fasta',
                                copyflag=False)
             # cmd = 'python2 /mnt/nas/WGSspades/file_extractor.py {}/seqid.txt {} /mnt/nas/'.format(work_dir, work_dir)
