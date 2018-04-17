@@ -35,7 +35,7 @@ def diversitree_redmine(redmine_instance, issue, work_dir, description):
 
         # Drop FASTA files into workdir
         retrieve_nas_files(seqids=seqids,
-                           outdir=os.path.join(work_dir, str(issue.id)),
+                           outdir=work_dir,
                            filetype='fasta',
                            copyflag=False)
         # Run a mash to figure out if any strains are particularly far apart and likely to make PARSNP fail.
