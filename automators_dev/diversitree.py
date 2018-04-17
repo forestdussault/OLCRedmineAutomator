@@ -64,7 +64,7 @@ def diversitree_redmine(redmine_instance, issue, work_dir, description):
             pass
 
         cmd = 'python /mnt/nas/Redmine/OLCRedmineAutomator/automators/sampler.py -i {work_dir} ' \
-              '-d {desired_tips} -o {output}'.format(work_dir=work_dir,
+              '-d {desired_tips} -o {output}'.format(work_dir=os.path.join(work_dir, 'fastas'),
                                                      desired_tips=desired_num_strains,
                                                      output=os.path.join(work_dir, 'output'))
         os.system(cmd)
