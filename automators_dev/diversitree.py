@@ -17,6 +17,8 @@ def diversitree_redmine(redmine_instance, issue, work_dir, description):
     description = pickle.load(open(description, 'rb'))
 
     try:
+        if not os.path.isdir(os.path.join(work_dir, 'fastas')):
+            os.makedirs(os.path.join(work_dir, 'fastas'))
         # Check that the first line of the request is a number. If it isn't, tell author they goofed and give up.
         try:
             desired_num_strains = int(description[0])
@@ -35,7 +37,7 @@ def diversitree_redmine(redmine_instance, issue, work_dir, description):
 
         # Drop FASTA files into workdir
         retrieve_nas_files(seqids=seqids,
-                           outdir=work_dir,
+                           outdir=os.path.join(work_dir, 'fastas'),
                            filetype='fasta',
                            copyflag=False)
         # Run a mash to figure out if any strains are particularly far apart and likely to make PARSNP fail.
