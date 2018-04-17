@@ -41,8 +41,8 @@ def diversitree_redmine(redmine_instance, issue, work_dir, description):
                            filetype='fasta',
                            copyflag=False)
         # Run a mash to figure out if any strains are particularly far apart and likely to make PARSNP fail.
-        reference_file = glob.glob(os.path.join(work_dir, '*.fasta'))[0]
-        bad_fastas = check_distances(reference_file, work_dir)
+        reference_file = glob.glob(os.path.join(work_dir, 'fastas', '*.fasta'))[0]
+        bad_fastas = check_distances(reference_file, os.path.join(work_dir, 'fastas'))
         if bad_fastas:
             outstr = ''
             for fasta in bad_fastas:
@@ -54,6 +54,14 @@ def diversitree_redmine(redmine_instance, issue, work_dir, description):
                                                 ' was {reference}. You may want to create a new issue and '
                                                 'try again.'.format(samples=outstr,
                                                                     reference=os.path.split(reference_file)[-1]))
+
+        # Remove distances.tab and sketch.msh from fastas folder, because sometimes they make
+        # parsnp crash. Other times they don't. I have no idea why, so remove just to be safe.
+        try:
+            os.remove(os.path.join(work_dir, 'fastas', 'distances.tab'))
+            os.remove(os.path.join(work_dir, 'fastas', 'sketch.msh'))
+        except OSError:
+            pass
 
         cmd = 'python /mnt/nas/Redmine/OLCRedmineAutomator/automators/sampler.py -i {work_dir} ' \
               '-d {desired_tips} -o {output}'.format(work_dir=work_dir,
