@@ -30,12 +30,10 @@ The Redmine issue description input must be formatted as follows:
 
 A note on Sample IDs:
 LSTS ID should be parsed from SampleSheet.csv by the COWBAT pipeline, and is available within the combinedMetadata.csv
-file that is central to this script's extraction of data. The LSTS ID is available under the 'SampleName' column in
-combinedMetadata.csv
+file. The LSTS ID is available under the 'SampleName' column in combinedMetadata.csv
 
+TODO: GDCS + GenomeQAML combined metric. Everything must pass in order to be listed as 'PASS'
 """
-# TODO: GDCS + GenomeQAML combined metric. Everything must pass in order to be listed as 'PASS'
-# TODO: Merge AMR table update (autoroga.py and autoroga_extract_report_data.py) with prod. when combMetadata is ready
 
 lab_info = {
     'GTA': ('2301 Midland Ave., Scarborough, ON, M1P 4R7', '416-952-3203'),
@@ -44,9 +42,7 @@ lab_info = {
     'FFFM': ('960 Carling Ave, Building 22 CEF, Ottawa, ON, K1A 0Y9', '613-759-1220'),
     'DAR': ('1992 Agency Dr., Dartmouth, NS, B2Y 3Z7', '902-536-1012'),
     'CAL': ('3650 36 Street NW, Calgary, AB, T2L 2L1', '403-338-5200'),
-    'STH': ('3400 Casavant Boulevard W., St. Hyacinthe, QC, J2S 8E3', '450-768-6800'),
-    'FMB': ('960 Carling Ave, Building 22 CEF, Ottawa, ON, K1A 0Y9', '613-759-1263'),  # Not in use
-    'OLF': ('3851 Fallowfield Rd., Ottawa, ON, K2H 8P9', '343-212-0500'),  # Not in use
+    'STH': ('3400 Casavant Boulevard W., St. Hyacinthe, QC, J2S 8E3', '450-768-6800')
 }
 
 
@@ -57,9 +53,8 @@ lab_info = {
 @click.option('--description', help='Path to pickled Redmine description')
 def redmine_roga(redmine_instance, issue, work_dir, description):
     """
-    Main method for generating a ROGA
+    Main method for generating autoROGA
     """
-
     # Unpickle Redmine objects
     redmine_instance = pickle.load(open(redmine_instance, 'rb'))
     issue = pickle.load(open(issue, 'rb'))
@@ -82,6 +77,7 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
     if amendment_flag is False:
         # Parse lab ID
         lab = description[0]
+        # Verify lab ID
         if lab not in lab_info:
             valid_labs = str([x for x, y in lab_info.items()])
             redmine_instance.issue.update(resource_id=issue.id, status_id=3,
@@ -92,6 +88,7 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
 
         # Parse source
         source = description[1].lower()
+        # Quick verification check to make sure this line isn't a Seq ID. This is brittle and should be changed.
         if len(source.split('-')) > 2:
             redmine_instance.issue.update(resource_id=issue.id, status_id=3,
                                           notes='ERROR: Invalid source provided. '
@@ -155,11 +152,6 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
             if item != '':
                 seqids.append(item)
         seqids = tuple(seqids)
-
-    print('LAB: %s' % lab)
-    print('SOURCE: %s' % source)
-    print('GENUS: %s' % genus)
-    print('SEQIDS: %s' % str(seqids))
 
     # Validate Seq IDs
     validated_list = []
@@ -395,7 +387,7 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
                                        )
 
             with doc.create(pl.Subsection('GeneSeekr Analysis', numbering=False)) as genesippr_section:
-                with doc.create(pl.Tabular(table_spec='|c|c|c|c|c|c|c|')) as table:
+                with doc.create(pl.Tabular('|c|c|c|c|c|c|c|')) as table:
                     # Header
                     table.add_hline()
                     table.add_row(genesippr_table_columns)
