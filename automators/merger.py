@@ -2,6 +2,8 @@
 
 from glob import glob
 from accessoryFunctions.accessoryFunctions import *
+import shutil
+
 __author__ = 'adamkoziol'
 
 
@@ -165,7 +167,6 @@ class Merger(object):
                     writesheet.write(''.join(samplesheet))
         # Optionally copy
         if self.copy:
-            import shutil
             make_path('{}/BestAssemblies'.format(self.assemblypath))
         # Link the files to the assembly path
         for sample in self.metadata:
@@ -334,6 +335,7 @@ class Merger(object):
             self.filelink()
             printtime(u'Files have been successfully linked to the assembly folder. Analysis complete.', self.start)
         sys.exit()
+
 
 # If the script is called from the command line, then call the argument parser
 if __name__ == '__main__':
