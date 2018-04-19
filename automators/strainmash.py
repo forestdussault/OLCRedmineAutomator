@@ -6,6 +6,7 @@ import pickle
 import shutil
 import pandas as pd
 from biotools import mash
+from nastools.nastools import retrieve_nas_files
 
 
 @click.command()
@@ -34,8 +35,10 @@ def strainmash_redmine(redmine_instance, issue, work_dir, description):
             f.write(seqid + '\n')
 
     # Drop FASTA files into workdir
-    cmd = 'python2 /mnt/nas/WGSspades/file_extractor.py {0}/seqid.txt {0} /mnt/nas/'.format(work_dir)
-    os.system(cmd)
+    retrieve_nas_files(seqids=seqids,
+                       outdir=work_dir,
+                       filetype='fasta',
+                       copyflag=False)
 
     # Create output directory
     output_dir = os.path.join(work_dir, 'output')

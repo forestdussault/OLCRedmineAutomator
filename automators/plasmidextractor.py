@@ -2,6 +2,7 @@ import os
 import click
 import pickle
 import shutil
+from nastools.nastools import retrieve_nas_files
 
 
 @click.command()
@@ -36,17 +37,7 @@ def plasmidextractor_redmine(redmine_instance, issue, work_dir, description):
     os.mkdir(output_folder)
 
     # Extract FASTQ files.
-    if len(seqids) > 0:
-        with open(os.path.join(work_dir, 'seqid.txt'), 'w') as f:
-            for seqid in seqids:
-                f.write(seqid + '\n')
-        current_dir = os.getcwd()
-        os.chdir('/mnt/nas/MiSeq_Backup')
-        cmd = 'python2 file_linker.py {seqidlist} ' \
-              '{output_folder}'.format(seqidlist=os.path.join(work_dir, 'seqid.txt'),
-                                       output_folder=raw_reads_folder)
-        os.system(cmd)
-        os.chdir(current_dir)
+    retrieve_nas_files(seqids=seqids, outdir=raw_reads_folder, filetype='fastq', copyflag=False)
 
     # These unfortunate hard coded paths appear to be necessary
     activate = 'source /home/ubuntu/miniconda3/bin/activate /home/ubuntu/miniconda3/envs/plasmidextractor'

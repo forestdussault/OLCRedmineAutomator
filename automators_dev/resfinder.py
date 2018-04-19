@@ -23,18 +23,11 @@ def resfinder_redmine(redmine_instance, issue, work_dir, description):
             item = item.upper()
             seqids.append(item)
 
-        # Write SEQIDs to file to be extracted and CLARKed.
-        # with open(os.path.join(work_dir, 'seqid.txt'), 'w') as f:
-        #     for seqid in seqids:
-        #         f.write(seqid + '\n')
-
-        # If it's FASTA, extract them and make sure all are present.
-        # cmd = 'python2 /mnt/nas/WGSspades/file_extractor.py {}/seqid.txt {} /mnt/nas/'.format(work_dir, work_dir)
-        # os.system(cmd)
         retrieve_nas_files(seqids=seqids,
                            outdir=work_dir,
                            filetype='fasta',
                            copyflag=False)
+
         missing_fastas = verify_fasta_files_present(seqids, work_dir)
         if missing_fastas:
             redmine_instance.issue.update(resource_id=issue.id,
