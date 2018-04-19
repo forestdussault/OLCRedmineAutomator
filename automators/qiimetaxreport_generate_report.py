@@ -139,6 +139,11 @@ def extract_taxonomy(value):
         for value in tax_list:
             if value != '__':
                 tax_string = value + ' (closest known classification)'
+    elif 'uncultured' in tax_string.lower():
+        tax_list = value.split(';')
+        for value in tax_list:
+            if 'uncultured' not in value:
+                tax_string = value + ' (closest known classification)'
 
     return tax_string
 
