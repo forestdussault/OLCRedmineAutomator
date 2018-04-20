@@ -111,5 +111,6 @@ def verify_fasta_files_present(seqid_list, fasta_dir):
             missing_fastas.append(seqid)
     return missing_fastas
 
+
 if __name__ == '__main__':
     clark_redmine()

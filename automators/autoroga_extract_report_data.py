@@ -1,4 +1,5 @@
 import os
+import re
 import glob
 import collections
 import pandas as pd
@@ -22,8 +23,9 @@ def create_report_dictionary(report_list, seq_list, id_column='SeqID'):
         # Accomodating runs that might still be in progress
         try:
             df = pd.read_csv(report)
-        except:  # from pandas.io.parser import CParserError try/except with CParserError for this
+        except:
             continue
+        # might need to use from pandas.io.parser import CParserError try/except with CParserError for this
 
         # Accomodating old reports coming up
         try:
@@ -198,6 +200,45 @@ def generate_validated_list(seq_list, genus):
             print('WARNING: '
                   'Seq ID {} does not match the expected genus of {} and was ignored.'.format(seqid, genus.upper()))
     return validated_list
+
+
+def parse_amr_profile(value):
+    """
+    Takes the value from the AMR_Profile column in combinedMetadata.csv and retrieves resistance, gene, and % identity
+    :param value: AMR_Profile column value from combinedMetadata.csv
+    :return: tuple for each resistance containing dicts with resistance, gene, % identity as keys
+    """
+    # Initial check to see if a resistance profile for the sample exists
+    if value == '-':
+        return None
+
+    # Split on ; to retrieve each resistance detected for a sample
+    resistances = value.split(';')
+    amr_profile = []
+    for res in resistances:
+
+        profile = dict()
+
+        # parse gene: should always be the first element when splitting on spaces
+        gene = res.split(' ')[0]
+
+        # parse out % identity with some regex/splitting
+        isolate_term = res.split(' ')[1]
+        reg_pattern = re.compile(r'^\D*(\d+(?:\.\d+)?)\D*$')
+        identity = float(re.findall(reg_pattern, isolate_term)[0])
+
+        # grab resistance: should be everything after the first two space delimiters
+        resistance = res.split(' ', 2)[2].replace(' resistance', '')
+
+        # populate dict
+        profile['gene'] = gene
+        profile['identity'] = identity
+        profile['resistance'] = resistance
+
+        # append to master list
+        amr_profile.append(profile)
+
+    return tuple(amr_profile)
 
 
 def parse_geneseekr_profile(value):

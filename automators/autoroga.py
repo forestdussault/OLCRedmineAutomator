@@ -232,6 +232,8 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
     all_vt = False
     all_mono = False
     all_enterica = False
+    some_vt = False
+    vt_sample_list = []
 
     # SECOND VALIDATION SCREEN
     if genus == 'Escherichia':
@@ -246,15 +248,23 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
             uida_list.append(ecoli_uida_present)
             vt_list.append(ecoli_vt_present)
 
+            # For the AMR table so only vt+ samples are shown
+            if ecoli_vt_present is True:
+                vt_sample_list.append(key)
+
             if not ecoli_uida_present:
                 print('WARNING: uidA not present for {}. Cannot confirm E. coli.'.format(key))
             if not ecoli_vt_present:
-                print('WARNING: vt marker not detected for {}. Cannot confirm strain is verotoxigenic.'.format(key))
+                print('WARNING: vt probe sequences not detected for {}. '
+                      'Cannot confirm strain is verotoxigenic.'.format(key))
 
         if False not in uida_list:
             all_uida = True
         if False not in vt_list:
             all_vt = True
+
+        if True in vt_list:
+            some_vt = True
 
     elif genus == 'Listeria':
         validated_listeria_dict = extract_report_data.validate_listeria(seq_list, metadata_reports)
@@ -519,15 +529,16 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
                                                        "- indicates marker was not detected")
 
         # SEQUENCE TABLE
-        sequence_quality_columns = (bold('ID'),
-                                    bold(pl.NoEscape(r'Total Length')),
-                                    bold(pl.NoEscape(r'Coverage')),
-                                    bold(pl.NoEscape(r'GDCS')),
-                                    bold(pl.NoEscape(r'Pass/Fail')),
-                                    )
-
         with doc.create(pl.Subsection('Sequence Quality Metrics', numbering=False)):
             with doc.create(pl.Tabular('|c|c|c|c|c|')) as table:
+                # Columns
+                sequence_quality_columns = (bold('ID'),
+                                            bold(pl.NoEscape(r'Total Length')),
+                                            bold(pl.NoEscape(r'Coverage')),
+                                            bold(pl.NoEscape(r'GDCS')),
+                                            bold(pl.NoEscape(r'Pass/Fail')),
+                                            )
+
                 # Header
                 table.add_hline()
                 table.add_row(sequence_quality_columns)
@@ -574,7 +585,7 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
                 for sample_id, df in metadata_reports.items():
                     table.add_hline()
 
-                    # LSTS ID
+                    # ID
                     lsts_id = df.loc[df['SeqID'] == sample_id]['SampleName'].values[0]
 
                     # Pipeline version
@@ -586,7 +597,7 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
 
                 table.add_hline()
 
-        # 'VERIFIED BY' TEXT FIELD
+        # 'VERIFIED BY' FIELD
         with doc.create(pl.Subsubsection('Verified by:', numbering=False)):
             with doc.create(Form()):
                 doc.append(pl.Command('noindent'))

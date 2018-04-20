@@ -62,4 +62,5 @@ def update_db(date, year, genus, lab, source, amendment_flag, amended_id):
                                                  amendment_flag=amendment_flag, amended_id=amended_id,
                                                  time=datetime.datetime.utcnow())
     con.execute(ins)
+
     return roga_id

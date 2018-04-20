@@ -23,8 +23,6 @@ def merge_redmine(redmine_instance, issue, work_dir, description):
         # Download the attached excel file.
         # First, get the attachment id - this seems like a kind of hacky way to do this, but I have yet to figure
         # out a better way to do it.
-        redmine_instance.issue.update(resource_id=issue.id,
-                                      notes='Started merging...')
         attachment = redmine_instance.issue.get(issue.id, include='attachments')
         attachment_id = 0
         for item in attachment.attachments:
@@ -41,8 +39,6 @@ def merge_redmine(redmine_instance, issue, work_dir, description):
                                           status_id=4)
             return
 
-        redmine_instance.issue.update(resource_id=issue.id,
-                                      notes='Downloaded excel file...')
         # Now use convert_excel_file to make compatible with merger.py
         convert_excel_file(os.path.join(work_dir, 'merge.xlsx'), os.path.join(work_dir, 'Merge.xlsx'))
 
@@ -56,8 +52,8 @@ def merge_redmine(redmine_instance, issue, work_dir, description):
                            copyflag=False)
 
         # Run the merger script.
-        cmd = 'python /mnt/nas/Redmine/OLCRedmineAutomator/automators/merger.py -f {} -d ";" {}'.format(os.path.join(work_dir, 'Merge.xlsx'),
-                                                        work_dir)
+        cmd = 'python /mnt/nas/Redmine/OLCRedmineAutomator/automators/merger.py -f {} -d ";" {}'.format(
+            os.path.join(work_dir, 'Merge.xlsx'), work_dir)
         os.system(cmd)
 
         # Make a folder to put all the merged FASTQs in biorequest folder. and put the merged FASTQs there.

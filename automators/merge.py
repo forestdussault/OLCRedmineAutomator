@@ -5,6 +5,7 @@ import pickle
 import shutil
 import pandas as pd
 from pandas import ExcelWriter
+from nastools.nastools import retrieve_nas_files
 
 
 @click.command()
@@ -44,18 +45,15 @@ def merge_redmine(redmine_instance, issue, work_dir, description):
         # Make a SEQID list of files we'll need to extract.
         seqid_list = generate_seqid_list(os.path.join(work_dir, 'Merge.xlsx'))
 
-        # Write SEQID list to file and extract FASTQ files to be merged.
-        with open(os.path.join(work_dir, 'list.txt'), 'w') as f:
-            for seqid in seqid_list:
-                f.write(seqid + '\n')
-
-        cmd = 'python2 /mnt/nas/MiSeq_Backup/file_linker.py {} {}'.format(os.path.join(work_dir, 'list.txt'),
-                                                                          work_dir)
-        os.system(cmd)
+        # Create links of all seqids needed in our working dir
+        retrieve_nas_files(seqids=seqid_list,
+                           outdir=work_dir,
+                           filetype='fastq',
+                           copyflag=False)
 
         # Run the merger script.
-        cmd = 'python /mnt/nas/Redmine/OLCRedmineAutomator/automators/merger.py -f {} -d ";" {}'.format(os.path.join(work_dir, 'Merge.xlsx'),
-                                                        work_dir)
+        cmd = 'python /mnt/nas/Redmine/OLCRedmineAutomator/automators/merger.py -f {} -d ";" {}'.format(
+            os.path.join(work_dir, 'Merge.xlsx'), work_dir)
         os.system(cmd)
 
         # Make a folder to put all the merged FASTQs in biorequest folder. and put the merged FASTQs there.
