@@ -58,7 +58,7 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
         if len(tiny_fastqs) > 0:
             redmine_instance.issue.update(resource_id=issue.id, status_id=4,
                                           notes='ERROR: The following FASTQ files had file sizes '
-                                                'smaller than 100KB: {}\n\nThey likely did not upload '
+                                                'smaller than 1KB: {}\n\nThey likely did not upload '
                                                 'properly. Please re-upload to the FTP and create a new '
                                                 'issue.'.format(str(tiny_fastqs)))
             validation = False
@@ -345,7 +345,7 @@ def verify_fastq_sizes(sequence_folder):
     for item in ftp_files:
         if item.endswith('.gz') and 'Undetermined' not in item:
             file_size = ftp.size(item)
-            if file_size < 100000:
+            if file_size < 1000:
                 tiny_fastqs.append(item)
     ftp.quit()
     return tiny_fastqs
