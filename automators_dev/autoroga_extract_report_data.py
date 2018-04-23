@@ -215,10 +215,6 @@ def parse_amr_profile(value):
     # Split on ; to retrieve each resistance detected for a sample
     resistances = value.split(';')
 
-    # Another (maybe redundant) check to avoid index errors
-    if len(resistances) <= 1:
-        return None
-
     amr_profile = []
     for res in resistances:
 
