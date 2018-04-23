@@ -32,7 +32,7 @@ A note on Sample IDs:
 LSTS ID should be parsed from SampleSheet.csv by the COWBAT pipeline, and is available within the combinedMetadata.csv
 file. The LSTS ID is available under the 'SampleName' column in combinedMetadata.csv
 
-TODO: GDCS + GenomeQAML combined metric. Everything must pass in order to be listed as 'PASS'
+
 """
 
 lab_info = {
@@ -46,6 +46,7 @@ lab_info = {
 }
 
 
+# TODO: GDCS + GenomeQAML combined metric. Everything must pass in order to be listed as 'PASS'
 @click.command()
 @click.option('--redmine_instance', help='Path to pickled Redmine API instance')
 @click.option('--issue', help='Path to pickled Redmine issue')
@@ -66,6 +67,11 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
     genus = None
     source = None
     seqids = None
+    lstsids = None
+    seq_lsts_dict = None
+
+    # Remove all newlines/empty lines from the description items
+    description = [x for x in description if x != '']
 
     # Amendment functionality
     amendment_flag = False
@@ -83,7 +89,8 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
             redmine_instance.issue.update(resource_id=issue.id, status_id=3,
                                           notes='ERROR: Invalid Lab ID provided. Please ensure the first line of your '
                                                 'Redmine description specifies one of the following labs:\n'
-                                                '{}'.format(valid_labs))
+                                                '{}\n'
+                                                'Your input: {}'.format(valid_labs, description))
             quit()
 
         # Parse source
@@ -104,12 +111,18 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
             quit()
 
         # Parse Seq IDs
-        seqids = list()
-        for item in description[3:]:
-            item = item.upper().strip()
-            if item != '':
-                seqids.append(item)
-        seqids = tuple(seqids)
+        # NOTE: Now should have SeqID;LSTSID format
+        try:
+            seqids, lstsids = parse_seqid_list(description)
+        except:
+            redmine_instance.issue.update(resource_id=issue.id, status_id=3,
+                                          notes='ERROR: Could not pair Seq IDs and LSTS IDs from the provided '
+                                                'description. Confirm that each sample follows the required format '
+                                                'of [SEQID; LSTSID] or [SEQID   LSTSID] for each line.')
+            quit()
+
+        seq_lsts_dict = dict(zip(seqids, lstsids))
+
     elif amendment_flag:
         try:
             amended_report_id = amendment_check.split(':')[1]
@@ -146,12 +159,15 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
             quit()
 
         # Parse Seq IDs
-        seqids = list()
-        for item in description[4:]:
-            item = item.upper().strip()
-            if item != '':
-                seqids.append(item)
-        seqids = tuple(seqids)
+        try:
+            seqids, lstsids = parse_seqid_list(description)
+        except:
+            redmine_instance.issue.update(resource_id=issue.id, status_id=3,
+                                          notes='ERROR: Could not pair Seq IDs and LSTS IDs from the provided '
+                                                'description. Confirm that each sample follows the required format '
+                                                'of [SEQID; LSTSID] or [SEQID   LSTSID] for each line.')
+            quit()
+        seq_lsts_dict = dict(zip(seqids, lstsids))
 
     # Validate Seq IDs
     validated_list = []
@@ -159,7 +175,7 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
         validated_list = extract_report_data.generate_validated_list(seq_list=seqids, genus=genus)
     except KeyError as e:
         redmine_instance.issue.update(resource_id=issue.id, status_id=3,
-                                      notes='ERROR: Could not find one or more of the provided Seq IDs.\n'
+                                      notes='ERROR: Could not find one or more of the provided Seq IDs on the NAS.\n'
                                             'TRACEBACK: {}'.format(e))
         quit()
 
@@ -169,8 +185,14 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
                                             '"{}"'.format(genus.upper()))
         quit()
 
+    if validated_list != seqids:
+        redmine_instance.issue.update(resource_id=issue.id, status_id=3,
+                                      notes='ERROR: Could not validate SeqIDs.\nValidated list: {}\nSeqList: {}'
+                                      .format(validated_list, seqids))
+        quit()
+
     # GENERATE REPORT
-    pdf_file = generate_roga(seq_list=validated_list,
+    pdf_file = generate_roga(seq_lsts_dict=seq_lsts_dict,
                              genus=genus,
                              lab=lab,
                              source=source,
@@ -190,10 +212,10 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
                                   notes='Generated ROGA successfully. Completed PDF report is attached.')
 
 
-def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amended_id):
+def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, amended_id):
     """
     Generates PDF
-    :param seq_list: List of OLC Seq IDs
+    :param seq_lsts_dict: Dict of SeqIDs;LSTSIDs
     :param genus: Expected Genus for samples (Salmonella, Listeria, or Escherichia)
     :param lab: ID for lab report is being generated for
     :param source: string input for source that strains were derived from, i.e. 'ground beef'
@@ -203,6 +225,8 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
     """
 
     # RETRIEVE DATAFRAMES FOR EACH SEQID
+    seq_list = list(seq_lsts_dict.keys())
+
     metadata_reports = extract_report_data.get_combined_metadata(seq_list)
     gdcs_reports = extract_report_data.get_gdcs(seq_list)
     gdcs_dict = extract_report_data.generate_gdcs_dict(gdcs_reports)
@@ -397,7 +421,8 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
                         table.add_hline()
 
                         # ID
-                        lsts_id = df.loc[df['SeqID'] == sample_id]['SampleName'].values[0]
+                        # lsts_id = df.loc[df['SeqID'] == sample_id]['SampleName'].values[0]
+                        lsts_id = seq_lsts_dict[sample_id]
 
                         # Genus (pulled from 16S)
                         genus = df.loc[df['SeqID'] == sample_id]['Genus'].values[0]
@@ -450,7 +475,8 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
                         table.add_hline()
 
                         # ID
-                        lsts_id = df.loc[df['SeqID'] == sample_id]['SampleName'].values[0]
+                        # lsts_id = df.loc[df['SeqID'] == sample_id]['SampleName'].values[0]
+                        lsts_id = seq_lsts_dict[sample_id]
 
                         # Genus
                         genus = df.loc[df['SeqID'] == sample_id]['Genus'].values[0]
@@ -498,7 +524,8 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
                         table.add_hline()
 
                         # ID
-                        lsts_id = df.loc[df['SeqID'] == sample_id]['SampleName'].values[0]
+                        # lsts_id = df.loc[df['SeqID'] == sample_id]['SampleName'].values[0]
+                        lsts_id = seq_lsts_dict[sample_id]
 
                         # MLST/rMLST
                         mlst = str(df.loc[df['SeqID'] == sample_id]['MLST_Result'].values[0]).replace('-', 'New')
@@ -548,7 +575,8 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
                     table.add_hline()
 
                     # Grab values
-                    lsts_id = df.loc[df['SeqID'] == sample_id]['SampleName'].values[0]
+                    # lsts_id = df.loc[df['SeqID'] == sample_id]['SampleName'].values[0]
+                    lsts_id = seq_lsts_dict[sample_id]
                     total_length = df.loc[df['SeqID'] == sample_id]['TotalLength'].values[0]
                     average_coverage_depth = df.loc[df['SeqID'] == sample_id]['AverageCoverageDepth'].values[0]
 
@@ -586,7 +614,8 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
                     table.add_hline()
 
                     # ID
-                    lsts_id = df.loc[df['SeqID'] == sample_id]['SampleName'].values[0]
+                    # lsts_id = df.loc[df['SeqID'] == sample_id]['SampleName'].values[0]
+                    lsts_id = seq_lsts_dict[sample_id]
 
                     # Pipeline version
                     pipeline_version = df.loc[df['SeqID'] == sample_id]['PipelineVersion'].values[0]
@@ -621,6 +650,43 @@ def generate_roga(seq_list, genus, lab, source, work_dir, amendment_flag, amende
     return pdf_file
 
 
+def parse_seqid_list(description):
+    seqids = list()
+    lstsids = list()
+
+    # Remove whitespace
+    description = [x.replace(' ', '') for x in description]
+
+    try:
+        for item in description[3:]:
+            seqid_item = None
+            lstsid_item = None
+
+            # Accomodating pasting straight from Excel
+            if '\t' in item:
+                seqid_item = item.split('\t')[0]
+                lstsid_item = item.split('\t')[1]
+
+            # Manually delimiting IDs with a semicolon in the description
+            elif ';' in item:
+                seqid_item = item.split(';')[0]
+                lstsid_item = item.split(';')[1]
+
+            seqid_item = seqid_item.upper().strip()
+            lstsid_item = lstsid_item.upper().strip()
+
+            if seqid_item != '':
+                seqids.append(seqid_item)
+            if lstsid_item != '':
+                lstsids.append(lstsid_item)
+    except IndexError:
+        return None
+
+    seqids = tuple(seqids)
+    lstsids = tuple(lstsids)
+    return seqids, lstsids
+
+
 def produce_header_footer():
     """
     Adds a generic header/footer to the report. Includes the date and CFIA logo in the header + legend in the footer.
@@ -639,7 +705,7 @@ def produce_header_footer():
     with header.create(pl.Foot("C")):
         with header.create(pl.Tabular('lcr')) as table:
             table.add_row('', bold('Data interpretation guidelines can be found in RDIMS document ID: 10401305'), '')
-            table.add_row('', bold('This report was generated with OLC AutoROGA v1.0'), '')
+            table.add_row('', bold('This report was generated with OLC AutoROGA v1.1'), '')
     return header
 
 

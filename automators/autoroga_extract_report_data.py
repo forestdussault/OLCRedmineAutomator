@@ -74,7 +74,7 @@ def validate_genus(seq_list, genus):
     """
     metadata_reports = get_combined_metadata(seq_list)
 
-    valid_status = {}
+    valid_status = collections.OrderedDict()
 
     for seqid in seq_list:
         print('Validating {} genus'.format(seqid))
@@ -199,7 +199,7 @@ def generate_validated_list(seq_list, genus):
         else:
             print('WARNING: '
                   'Seq ID {} does not match the expected genus of {} and was ignored.'.format(seqid, genus.upper()))
-    return validated_list
+    return tuple(validated_list)
 
 
 def parse_amr_profile(value):
@@ -209,11 +209,12 @@ def parse_amr_profile(value):
     :return: tuple for each resistance containing dicts with resistance, gene, % identity as keys
     """
     # Initial check to see if a resistance profile for the sample exists
-    if value == '-':
+    if value == '-' or value == 'ND':
         return None
 
     # Split on ; to retrieve each resistance detected for a sample
     resistances = value.split(';')
+
     amr_profile = []
     for res in resistances:
 
