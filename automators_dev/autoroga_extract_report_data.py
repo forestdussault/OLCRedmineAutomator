@@ -209,11 +209,16 @@ def parse_amr_profile(value):
     :return: tuple for each resistance containing dicts with resistance, gene, % identity as keys
     """
     # Initial check to see if a resistance profile for the sample exists
-    if value == '-':
+    if value == '-' or value == 'ND':
         return None
 
     # Split on ; to retrieve each resistance detected for a sample
     resistances = value.split(';')
+
+    # Another (maybe redundant) check to avoid index errors
+    if len(resistances) <= 1:
+        return None
+
     amr_profile = []
     for res in resistances:
 
