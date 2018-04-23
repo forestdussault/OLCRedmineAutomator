@@ -74,7 +74,7 @@ def validate_genus(seq_list, genus):
     """
     metadata_reports = get_combined_metadata(seq_list)
 
-    valid_status = {}
+    valid_status = collections.OrderedDict()
 
     for seqid in seq_list:
         print('Validating {} genus'.format(seqid))
@@ -199,7 +199,7 @@ def generate_validated_list(seq_list, genus):
         else:
             print('WARNING: '
                   'Seq ID {} does not match the expected genus of {} and was ignored.'.format(seqid, genus.upper()))
-    return validated_list
+    return tuple(validated_list)
 
 
 def parse_amr_profile(value):
