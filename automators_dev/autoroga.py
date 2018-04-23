@@ -215,7 +215,7 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
 def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, amended_id):
     """
     Generates PDF
-    :param seq_list: List of OLC Seq IDs
+    :param seq_lsts_dict: Dict of SeqIDs;LSTSIDs
     :param genus: Expected Genus for samples (Salmonella, Listeria, or Escherichia)
     :param lab: ID for lab report is being generated for
     :param source: string input for source that strains were derived from, i.e. 'ground beef'
@@ -762,9 +762,10 @@ def produce_header_footer():
     # Footer
     with header.create(pl.Foot("C")):
         with header.create(pl.Tabular('lcr')) as table:
-            table.add_row('', bold('Not valid for official use - this is a DEVELOPMENT version of the AutoROGA report.'), '')
+            table.add_row('', bold('Not valid for official use - this is a DEVELOPMENT'
+                                   ' version of the AutoROGA report.'), '')
             table.add_row('', bold('Data interpretation guidelines can be found in RDIMS document ID: 10401305'), '')
-            table.add_row('', bold('This report was generated with OLC AutoROGA v1.0'), '')
+            table.add_row('', bold('This report was generated with OLC AutoROGA v1.1'), '')
     return header
 
 
