@@ -316,6 +316,14 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
             doc.append(italic(' (This report is an amended version of '))
             doc.append(amended_id)
             doc.append(italic(')'))
+            doc.append('\n')
+            doc.append(pl.Command('TextField',
+                                  options=["name=rdimsnumberbox",
+                                           "multiline=false",
+                                           pl.NoEscape("bordercolor=0 0 0"),
+                                           pl.NoEscape("width=1.1in"),
+                                           "height=0.2in"],
+                                  arguments=bold('RDIMS ID: ')))
             doc.append(bold('\nReporting laboratory: '))
             doc.append(lab)
             doc.append('\n\n')
@@ -341,6 +349,14 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
         else:
             doc.append(bold('Report ID: '))
             doc.append(report_id)
+            doc.append('\n')
+            doc.append(pl.Command('TextField',
+                                  options=["name=rdimsnumberbox",
+                                           "multiline=false",
+                                           pl.NoEscape("bordercolor=0 0 0"),
+                                           pl.NoEscape("width=1.1in"),
+                                           "height=0.2in"],
+                                  arguments=bold('RDIMS ID: ')))
             doc.append(bold('\nReporting laboratory: '))
             doc.append(lab)
             doc.append('\n\n')
