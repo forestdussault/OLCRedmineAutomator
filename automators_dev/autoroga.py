@@ -552,11 +552,23 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
                         # If the serovar is particularly long, tables end up being longer than the page.
                         # To fix, try to find a space somewhere near the middle of the serovar string and insert a
                         # newline there.
-                        starting_index = int(len(serovar)/2)
-                        for i in range(starting_index, len(serovar)):
-                            if serovar[i] == ' ':
-                                serovar[i] = '\n'
-                                break
+
+                        if len(serovar) > 12:
+                            # First, find what index a space is that we can change.
+                            starting_index = int(len(serovar)/2)
+                            index_to_change = 999
+                            for i in range(starting_index, len(serovar)):
+                                if serovar[i] == ' ':
+                                    index_to_change = i
+                                    break
+                            if index_to_change != 999:
+                                serovar_with_newline = ''
+                                for i in range(len(serovar)):
+                                    if i == index_to_change:
+                                        serovar_with_newline += '\n'
+                                    else:
+                                        serovar_with_newline += serovar[i]
+                                serovar = serovar_with_newline
 
                         # SISTR Serogroup, H1, H2
                         sistr_serogroup = df.loc[df['SeqID'] == sample_id]['SISTR_serogroup'].values[0]
