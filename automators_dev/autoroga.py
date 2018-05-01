@@ -530,7 +530,7 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
                                        )
 
             with doc.create(pl.Subsection('GeneSeekr Analysis', numbering=False)) as genesippr_section:
-                with doc.create(pl.Tabular('|c|c|c|c|c|c|c|c|c|')) as table:
+                with doc.create(pl.Tabular('|c|p{2cm}|c|c|c|c|c|c|c|')) as table:
                     # Header
                     table.add_hline()
                     table.add_row(genesippr_table_columns)
@@ -565,10 +565,10 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
                                 serovar_with_newline = ''
                                 for i in range(len(serovar)):
                                     if i == index_to_change:
-                                        serovar_with_newline += '\n'
+                                        serovar_with_newline += '\\newline '
                                     else:
                                         serovar_with_newline += serovar[i]
-                                serovar = serovar_with_newline
+                                serovar = pl.NoEscape(r'' + serovar_with_newline)
 
                         # SISTR Serogroup, H1, H2
                         sistr_serogroup = df.loc[df['SeqID'] == sample_id]['SISTR_serogroup'].values[0]

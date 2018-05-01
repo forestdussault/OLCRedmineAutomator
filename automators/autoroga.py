@@ -534,7 +534,7 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
                                        )
 
             with doc.create(pl.Subsection('GeneSeekr Analysis', numbering=False)) as genesippr_section:
-                with doc.create(pl.Tabular('|c|c|c|c|c|c|c|c|c|')) as table:
+                with doc.create(pl.Tabular('|c|p{2cm}|c|c|c|c|c|c|c|')) as table:
                     # Header
                     table.add_hline()
                     table.add_row(genesippr_table_columns)
@@ -553,6 +553,26 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
 
                         # Serovar
                         serovar = df.loc[df['SeqID'] == sample_id]['SISTR_serovar'].values[0]
+                        # If the serovar is particularly long, tables end up being longer than the page.
+                        # To fix, try to find a space somewhere near the middle of the serovar string and insert a
+                        # newline there.
+
+                        if len(serovar) > 12:
+                            # First, find what index a space is that we can change.
+                            starting_index = int(len(serovar)/2)
+                            index_to_change = 999
+                            for i in range(starting_index, len(serovar)):
+                                if serovar[i] == ' ':
+                                    index_to_change = i
+                                    break
+                            if index_to_change != 999:
+                                serovar_with_newline = ''
+                                for i in range(len(serovar)):
+                                    if i == index_to_change:
+                                        serovar_with_newline += '\\newline '
+                                    else:
+                                        serovar_with_newline += serovar[i]
+                                serovar = pl.NoEscape(r'' + serovar_with_newline)
 
                         # SISTR Serogroup, H1, H2
                         sistr_serogroup = df.loc[df['SeqID'] == sample_id]['SISTR_serogroup'].values[0]
