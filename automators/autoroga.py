@@ -45,6 +45,10 @@ lab_info = {
     'STH': ('3400 Casavant Boulevard W., St. Hyacinthe, QC, J2S 8E3', '450-768-6800')
 }
 
+# TODO: User level security to ensure only permitted users can submit AutoROGA requests
+permitted_users = [
+    '',
+]
 
 # TODO: GDCS + GenomeQAML combined metric. Everything must pass in order to be listed as 'PASS'
 @click.command()
