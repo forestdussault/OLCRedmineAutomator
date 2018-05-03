@@ -13,16 +13,13 @@ import subprocess
 def qiimegraph(redmine_instance, issue, work_dir, description):
     """
     Description should be parsed as follows:
-
     TAXONOMIC LEVEL
     CUTOFF
-    SAMPLE
-
+    SAMPLE,SAMPLE,SAMPLE,etc...
     Example:
-
     Family
     None
-    SP1
+    SP1,SP2,SP3
     """
     # Unpickle Redmine objects
     redmine_instance = pickle.load(open(redmine_instance, 'rb'))
@@ -31,7 +28,6 @@ def qiimegraph(redmine_instance, issue, work_dir, description):
 
     try:
         # Download the attached taxonomy_barplot.qzv
-        redmine_instance.issue.update(resource_id=issue.id, notes='Initiated QIIMETAXREPORT...')
         attachment = redmine_instance.issue.get(issue.id, include='attachments')
         attachment_id = 0
         for item in attachment.attachments:
@@ -74,23 +70,25 @@ def qiimegraph(redmine_instance, issue, work_dir, description):
         cutoff = None if cutoff.lower().strip() == 'none' else float(cutoff)
 
         # Samples
-        sample = description[2]
+        samples = description[2]
+        samples = samples.split(',')
 
-        cmd = '/mnt/nas/Redmine/QIIME2_CondaEnv/qiime2-2018.2/bin/python ' \
-              '/mnt/nas/Redmine/OLCRedmineAutomator/automators_dev/qiimetaxreport_generate_report.py ' \
-              '-i {} ' \
-              '-o {} ' \
-              '-s {} ' \
-              '-t {}'.format(attachment_file, work_dir, sample, taxonomic_level)
-        if cutoff is not None:
-            cmd += ' -c {}'.format(cutoff)
-        p = subprocess.Popen(cmd, shell=True)
-        p.wait()
+        for sample in samples:
+            cmd = '/mnt/nas/Redmine/QIIME2_CondaEnv/qiime2-2018.2/bin/python ' \
+                  '/mnt/nas/Redmine/OLCRedmineAutomator/automators/qiimetaxreport_generate_report.py ' \
+                  '-i {} ' \
+                  '-o {} ' \
+                  '-s {} ' \
+                  '-t {}'.format(attachment_file, work_dir, sample, taxonomic_level)
+            if cutoff is not None:
+                cmd += ' -c {}'.format(cutoff)
+            p = subprocess.Popen(cmd, shell=True)
+            p.wait()
 
         # Zip up the ouput
-        output_file = None
+        output_files = None
         try:
-            output_file = glob.glob(os.path.join(work_dir, 'taxonomy_report*.csv'))[0]
+            output_files = glob.glob(os.path.join(work_dir, 'taxonomy_report*.csv'))
         except IndexError:
             redmine_instance.issue.update(resource_id=issue.id, status_id=3,
                                           notes='ERROR: Something went wrong. Please verify the provided '
@@ -98,15 +96,14 @@ def qiimegraph(redmine_instance, issue, work_dir, description):
             quit()
 
         # Output list containing dictionaries with file path as the key for upload to Redmine
-        output_list = [
-            {
-                'path': os.path.join(work_dir, output_file),
-                'filename': os.path.basename(output_file)
-            }
-        ]
+        output_list = []
+        for f in output_files:
+            tmp = {'path': os.path.join(work_dir, f), 'filename': os.path.basename(f)}
+            output_list.append(tmp)
 
         redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=4,
                                       notes='QIIMETAXREPORT Complete! Output report attached.')
+
     except Exception as e:
         redmine_instance.issue.update(resource_id=issue.id,
                                       notes='Something went wrong! Send this error traceback to your friendly '
