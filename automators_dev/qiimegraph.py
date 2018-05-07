@@ -15,6 +15,7 @@ def qiimegraph(redmine_instance, issue, work_dir, description):
     """
     Description should be parsed as follows:
 
+    Qiime output folder
     TAXONOMIC LEVEL
     FILTERING CRITERIA
     SAMPLES
@@ -22,6 +23,7 @@ def qiimegraph(redmine_instance, issue, work_dir, description):
 
     Example:
 
+    180501_M05722
     None
     Family
     SP1,SP2,SP3
@@ -33,28 +35,39 @@ def qiimegraph(redmine_instance, issue, work_dir, description):
     description = pickle.load(open(description, 'rb'))
 
     try:
+        #
         # Download the attached taxonomy_barplot.qzv
-        redmine_instance.issue.update(resource_id=issue.id, notes='Initiated QIIMEGRAPH...')
-        attachment = redmine_instance.issue.get(issue.id, include='attachments')
-        attachment_id = 0
-        for item in attachment.attachments:
-            attachment_id = item.id
+        # redmine_instance.issue.update(resource_id=issue.id, notes='Initiated QIIMEGRAPH...')
+        # attachment = redmine_instance.issue.get(issue.id, include='attachments')
+        # attachment_id = 0
+        # for item in attachment.attachments:
+        #     attachment_id = item.id
 
         # Now download, if attachment id is not 0, which indicates that we didn't find anything attached to the issue.
-        if attachment_id != 0:
-            attachment = redmine_instance.attachment.get(attachment_id)
-            attachment.download(savepath=work_dir, filename='taxonomy_barplot.qzv')
-            attachment_file = os.path.join(work_dir, 'taxonomy_barplot.qzv')
-        else:
-            redmine_instance.issue.update(resource_id=issue.id,
-                                          notes='ERROR: Did not find any attached files. Please create a new issue with'
-                                                ' a QIIME2 taxonomy_barplot.qzv file attached and try again.',
-                                          status_id=4)
-            return
+        # if attachment_id != 0:
+        #     attachment = redmine_instance.attachment.get(attachment_id)
+        #     attachment.download(savepath=work_dir, filename='taxonomy_barplot.qzv')
+        #     attachment_file = os.path.join(work_dir, 'taxonomy_barplot.qzv')
+        # else:
+        #     redmine_instance.issue.update(resource_id=issue.id,
+        #                                   notes='ERROR: Did not find any attached files. Please create a new issue with'
+        #                                         ' a QIIME2 taxonomy_barplot.qzv file attached and try again.',
+        #                                   status_id=4)
+        #     return
 
         # DESCRIPTION PARSING
+        # First line of description should specify output folder from qiime run.
+        qiime_output_folder = description[1].upper().strip()
+        # Verify that the qiime taxonomy barplot can be found for specified qiime output folder.
+        qiime_taxonomy_barplot = os.path.join('/mnt/nas2/processed_sequence_data/miseq_assemblies',
+                                              qiime_output_folder, 'qiime2', 'taxonomy_barplot.qvz')
+        if not os.path.isfile(qiime_taxonomy_barplot):
+            redmine_instance.issue.update(resource_id=issue.id, status_id=3,
+                                          notes='ERROR: Could not find taxonomy_barplot.qvz for specified run.'
+                                                ' Run specified was {}'.format(qiime_output_folder))
+
         # Taxonomy
-        taxonomic_level = description[0].lower().strip()
+        taxonomic_level = description[1].lower().strip()
 
         # Acceptable taxonomic levels
         check_taxonomy_list = ['kingdom',
@@ -73,12 +86,12 @@ def qiimegraph(redmine_instance, issue, work_dir, description):
             quit()
 
         # Filtering
-        filtering = description[1].capitalize()
+        filtering = description[2].capitalize()
         filtering = None if filtering.lower().strip() == 'none' else filtering
 
         # Samples
         sample_list = list()
-        for item in description[2:]:
+        for item in description[3:]:
             item = item.strip().replace(' ', '')
             if item != '':
                 sample_list.append(item)
@@ -90,7 +103,7 @@ def qiimegraph(redmine_instance, issue, work_dir, description):
                   '-i {} ' \
                   '-o {} ' \
                   '-s {} ' \
-                  '-t {}'.format(attachment_file, work_dir, samples, taxonomic_level)
+                  '-t {}'.format(qiime_taxonomy_barplot, work_dir, samples, taxonomic_level)
             if filtering is not None:
                 cmd += ' -f {}'.format(filtering)
             p = subprocess.Popen(cmd, shell=True)
