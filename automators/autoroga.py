@@ -90,7 +90,7 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
         # Verify lab ID
         if lab not in lab_info:
             valid_labs = str([x for x, y in lab_info.items()])
-            redmine_instance.issue.update(resource_id=issue.id, status_id=3,
+            redmine_instance.issue.update(resource_id=issue.id, status_id=4,
                                           notes='ERROR: Invalid Lab ID provided. Please ensure the first line of your '
                                                 'Redmine description specifies one of the following labs:\n'
                                                 '{}\n'
@@ -101,7 +101,7 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
         source = description[1].lower()
         # Quick verification check to make sure this line isn't a Seq ID. This is brittle and should be changed.
         if len(source.split('-')) > 2:
-            redmine_instance.issue.update(resource_id=issue.id, status_id=3,
+            redmine_instance.issue.update(resource_id=issue.id, status_id=4,
                                           notes='ERROR: Invalid source provided. '
                                                 'Line 2 of the Redmine description must be a valid string e.g. "flour"')
             quit()
@@ -109,7 +109,7 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
         # Parse genus
         genus = description[2].capitalize()
         if genus not in ['Escherichia', 'Salmonella', 'Listeria']:
-            redmine_instance.issue.update(resource_id=issue.id, status_id=3,
+            redmine_instance.issue.update(resource_id=issue.id, status_id=4,
                                           notes='ERROR: Input genus "{}" does not match any of the acceptable values'
                                                 ' which include: "Escherichia", "Salmonella", "Listeria"'.format(genus))
             quit()
@@ -119,7 +119,7 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
         try:
             seqids, lstsids = parse_seqid_list(description)
         except:
-            redmine_instance.issue.update(resource_id=issue.id, status_id=3,
+            redmine_instance.issue.update(resource_id=issue.id, status_id=4,
                                           notes='ERROR: Could not pair Seq IDs and LSTS IDs from the provided '
                                                 'description. Confirm that each sample follows the required format '
                                                 'of [SEQID; LSTSID] or [SEQID   LSTSID] for each line.')
@@ -131,7 +131,7 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
         try:
             amended_report_id = amendment_check.split(':')[1]
         except IndexError:
-            redmine_instance.issue.update(resource_id=issue.id, status_id=3,
+            redmine_instance.issue.update(resource_id=issue.id, status_id=4,
                                           notes='ERROR: Could not parse AutoROGA ID from AMENDMENT field.\n'
                                                 'Must be formatted as follows: AMENDMENT:ROGAID')
             quit()
@@ -140,7 +140,7 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
         lab = description[1]
         if lab not in lab_info:
             valid_labs = str([x for x, y in lab_info.items()])
-            redmine_instance.issue.update(resource_id=issue.id, status_id=3,
+            redmine_instance.issue.update(resource_id=issue.id, status_id=4,
                                           notes='ERROR: Invalid Lab ID provided. Please ensure the first line of your '
                                                 'Redmine description specifies one of the following labs:\n'
                                                 '{}'.format(valid_labs))
@@ -149,7 +149,7 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
         # Parse source
         source = description[2].lower()
         if len(source.split('-')) > 2:
-            redmine_instance.issue.update(resource_id=issue.id, status_id=3,
+            redmine_instance.issue.update(resource_id=issue.id, status_id=4,
                                           notes='ERROR: Invalid source provided. '
                                                 'Line 2 of the Redmine description must be a valid string e.g. "flour"')
             quit()
@@ -157,7 +157,7 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
         # Parse genus
         genus = description[3].capitalize()
         if genus not in ['Escherichia', 'Salmonella', 'Listeria']:
-            redmine_instance.issue.update(resource_id=issue.id, status_id=3,
+            redmine_instance.issue.update(resource_id=issue.id, status_id=4,
                                           notes='ERROR: Input genus "{}" does not match any of the acceptable values'
                                                 ' which include: "Escherichia", "Salmonella", "Listeria"'.format(genus))
             quit()
@@ -166,7 +166,7 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
         try:
             seqids, lstsids = parse_seqid_list(description)
         except:
-            redmine_instance.issue.update(resource_id=issue.id, status_id=3,
+            redmine_instance.issue.update(resource_id=issue.id, status_id=4,
                                           notes='ERROR: Could not pair Seq IDs and LSTS IDs from the provided '
                                                 'description. Confirm that each sample follows the required format '
                                                 'of [SEQID; LSTSID] or [SEQID   LSTSID] for each line.')
@@ -178,19 +178,19 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
     try:
         validated_list = extract_report_data.generate_validated_list(seq_list=seqids, genus=genus)
     except KeyError as e:
-        redmine_instance.issue.update(resource_id=issue.id, status_id=3,
+        redmine_instance.issue.update(resource_id=issue.id, status_id=4,
                                       notes='ERROR: Could not find one or more of the provided Seq IDs on the NAS.\n'
                                             'TRACEBACK: {}'.format(e))
         quit()
 
     if len(validated_list) == 0:
-        redmine_instance.issue.update(resource_id=issue.id, status_id=3,
+        redmine_instance.issue.update(resource_id=issue.id, status_id=4,
                                       notes='ERROR: No samples provided matched the expected genus '
                                             '"{}"'.format(genus.upper()))
         quit()
 
     if validated_list != seqids:
-        redmine_instance.issue.update(resource_id=issue.id, status_id=3,
+        redmine_instance.issue.update(resource_id=issue.id, status_id=4,
                                       notes='ERROR: Could not validate SeqIDs.\nValidated list: {}\nSeqList: {}'
                                       .format(validated_list, seqids))
         quit()
