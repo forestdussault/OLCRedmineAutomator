@@ -24,117 +24,53 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
     description = pickle.load(open(description, 'rb'))
 
     try:
+        # Add Cathy as a watcher so that we can make sure things get done. Also add me (Andrew) in case people
+        # forget to assign the issue to me.
+        issue.watcher.add(225)  # This is Cathy
+        issue.watcher.add(296)  # This is me.
+        # instead of folder on NAS.
         # Verify that sequence folder in description is named correctly.
         sequence_folder = description[0]
-        validation = True
-        if verify_folder_name(sequence_folder) is False:
-            redmine_instance.issue.update(resource_id=issue.id, status_id=4,
-                                          notes='ERROR: The folder name ({}) was not properly formatted. The correct'
-                                                ' format is YYMMDD_LAB. Please create a new folder that is properly named'
-                                                ' and create a new issue.'.format(sequence_folder))
-            validation = False
 
-        # Verify that the sequence folder specified does in fact exist. If it doesn't, give up.
-        if verify_folder_exists(sequence_folder) is False:
-            redmine_instance.issue.update(resource_id=issue.id, status_id=4,
-                                          notes='ERROR: Could not find the folder ({}) specified in this issue on '
-                                                'the FTP. Please ensure that it is uploaded correctly, create a new issue,'
-                                                ' and try again.'.format(sequence_folder))
-            return  # Can't check anything else if the folder doesn't exist.
+        # If the sequence folder looks like an absolute path on our NAS (implement a tougher check here),
+        # we assume the user knows what they're doing and don't bother validating anything
+        if len(sequence_folder.split('/')) > 1:
+            redmine_instance.issue.update(resource_id=issue.id, status_id=2,
+                                          notes='Attempting to use files already on NAS. Only use this option if you'
+                                                ' really know what you\'re doing!')
+            local_folder = sequence_folder
+            samplesheet_seqids = get_seqids_from_samplesheet(os.path.join(sequence_folder, 'SampleSheet.csv'))
+            lab_id = samplesheet_seqids[0].split('-')[1]
 
-        # Check that SEQIDs are properly formatted.
-        badly_formatted_fastqs = verify_seqid_formatting(sequence_folder)
-        if len(badly_formatted_fastqs) > 0:
-            redmine_instance.issue.update(resource_id=issue.id, status_id=4,
-                                          notes='ERROR: The following FASTQ files did not have their SEQIDs formatted '
-                                                'correctly: {}\n\nThe correct format is YYYY-LAB-####, where #### is the'
-                                                ' 4-digit sample number. Please rename the files, reupload to the FTP, '
-                                                'and try again.'.format(str(badly_formatted_fastqs)))
-            validation = False
-
-        # Verify that all the files uploaded that are .gz files are at least 100KB. Anything that is smaller than that
-        # almost certainly didn't upload properly. Ignore undetermined.
-        tiny_fastqs = verify_fastq_sizes(sequence_folder)
-        if len(tiny_fastqs) > 0:
-            redmine_instance.issue.update(resource_id=issue.id, status_id=4,
-                                          notes='ERROR: The following FASTQ files had file sizes '
-                                                'smaller than 1KB: {}\n\nThey likely did not upload '
-                                                'properly. Please re-upload to the FTP and create a new '
-                                                'issue.'.format(str(tiny_fastqs)))
-            validation = False
-
-        # Next up, validate that SampleSheet.csv, RunInfo, and GenerateFASTQRunStatistics are present.
-        missing_files = validate_files(sequence_folder)
-        if len(missing_files) > 0:
-            redmine_instance.issue.update(resource_id=issue.id, status_id=4,
-                                          notes='ERROR: The following files were missing from the FTP'
-                                                ' folder: {}\nPlease reupload to '
-                                                'the FTP, including these files ('
-                                                'spelling must be identical!) and'
-                                                ' create a new issue.'.format(str(missing_files)))
-            validation = False
-
-        # Now, download the info sheets (to a temporary folder) and make sure that SEQIDs that are present are good to go.
-        if not os.path.isdir(os.path.join(work_dir, sequence_folder)):
-            os.makedirs(os.path.join(work_dir, sequence_folder))
-        download_info_sheets(sequence_folder, os.path.join(work_dir, sequence_folder))
-        if 'SampleSheet.csv' in missing_files:
-            return
+        # Otherwise, do all verification checks on the FTP and download files.
         else:
+            validation = verify_all_the_things(sequence_folder=sequence_folder,
+                                               issue=issue,
+                                               work_dir=work_dir,
+                                               redmine_instance=redmine_instance)
+
+            # All checks that needed to be done should now be done. If any of them returned something bad,
+            # we stop and boot the user. Otherwise, go ahead with downloading files.
+            if validation is False:
+                return
+
+            redmine_instance.issue.update(resource_id=issue.id, status_id=2,
+                                          notes='All validation checks passed - beginning download '
+                                                'and assembly of sequence files.')
+
+            # Create the local folder that we'll need.
             samplesheet_seqids = get_seqids_from_samplesheet(os.path.join(work_dir, sequence_folder, 'SampleSheet.csv'))
-            missing_seqids = ensure_samples_are_present(samplesheet_seqids, sequence_folder)
-            if len(missing_seqids) > 0:
-                redmine_instance.issue.update(resource_id=issue.id, status_id=4,
-                                              notes='ERROR: The following SEQIDs from SampleSheet.csv could not'
-                                                    ' be found in the folder you uploaded to the FTP: {}\nPlease re-upload'
-                                                    ' your files to the FTP and create a new issue.'.format(str(missing_seqids)))
-                validation = False
+            lab_id = samplesheet_seqids[0].split('-')[1]
+            if lab_id == 'SEQ':
+                local_folder = os.path.join('/mnt/nas/MiSeq_Backup', sequence_folder)
+            else:
+                local_folder = os.path.join('/mnt/nas/External_MiSeq_Backup', lab_id, sequence_folder)
 
-        if 'GenerateFASTQRunStatistics.xml' not in missing_files:
-            samplesheet_seqids = get_seqids_from_samplesheet(os.path.join(work_dir, sequence_folder, 'SampleSheet.csv'))
-            missing_seqids = validate_fastq_run_stats(samplesheet_seqids, os.path.join(work_dir, sequence_folder))
-            if len(missing_seqids) > 0:
-                redmine_instance.issue.update(resource_id=issue.id, status_id=4,
-                                              notes='ERROR: The following SEQIDs from SampleSheet.csv could not'
-                                                    ' be found in GenerateFASTQRunStatistics.xml: {}\nPlease re-upload'
-                                                    ' your files to the FTP and create a new issue.'.format(str(missing_seqids)))
-                validation = False
+            if not os.path.isdir(local_folder):
+                os.makedirs(local_folder)
 
-        # Now check that the SEQIDs from the SampleSheet don't already exist on the OLC NAS.
-        samplesheet_seqids = get_seqids_from_samplesheet(os.path.join(work_dir, sequence_folder, 'SampleSheet.csv'))
-        shutil.rmtree(os.path.join(work_dir, sequence_folder))
-        duplicate_fastqs = check_for_fastq_on_nas(samplesheet_seqids)
-        if len(duplicate_fastqs) > 0:
-            redmine_instance.issue.update(resource_id=issue.id, status_id=4,
-                                          notes='ERROR: The following SEQIDs already have FASTQ files on the OLC NAS: {}\n'
-                                                'Please rename and reupload your files and create a '
-                                                'new issue.'.format(str(duplicate_fastqs)))
-            validation = False
-
-        # All checks that needed to be done should now be done. If any of them returned something bad,
-        # we stop and boot the user. Otherwise, go ahead with downloading files.
-        if validation is False:
-            return
-
-        redmine_instance.issue.update(resource_id=issue.id, status_id=2,
-                                      notes='All validation checks passed - beginning download '
-                                            'and assembly of sequence files.')
-
-        # Create the local folder that we'll need.
-        lab_id = samplesheet_seqids[0].split('-')[1]
-        if lab_id == 'SEQ':
-            local_folder = os.path.join('/mnt/nas/MiSeq_Backup', sequence_folder)
-        else:
-            local_folder = os.path.join('/mnt/nas/External_MiSeq_Backup', lab_id, sequence_folder)
-
-        if not os.path.isdir(local_folder):
-            os.makedirs(local_folder)
-
-        # Download the folder, recursively!
-        download_dir(sequence_folder, local_folder)
-        # redmine_instance.issue.update(resource_id=issue.id, status_id=2,
-        #                               notes='Download complete. Files were downloaded to {}.'
-        #                                     ' Beginning de novo assembly.'.format(local_folder))
+            # Download the folder, recursively!
+            download_dir(sequence_folder, local_folder)
 
         # Once the folder has been downloaded, copy it to the hdfs and start assembling using docker image.
         cmd = 'cp -r {local_folder} /hdfs'.format(local_folder=local_folder)
@@ -174,8 +110,7 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
         output_dict['path'] = os.path.join(work_dir, sequence_folder + '.zip')
         output_dict['filename'] = sequence_folder + '.zip'
         output_list.append(output_dict)
-        # redmine_instance.issue.update(resource_id=issue.id, uploads=output_list,
-        #                               notes='WGS Assembly Complete!')
+
         # Apparently we're also supposed to be uploading assemblies - these will be too big to be Redmine attachments,
         # so we'll need to upload to the ftp.
         folder_to_upload = os.path.join(work_dir, 'reports_and_assemblies')
@@ -197,7 +132,7 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
         f.close()
         s.quit()
 
-        # Make redmine create an issue for that says that a run has finished and a database entry needs
+        # Make redmine tell Paul that a run has finished and that we should add things to our DB so things don't get missed
         # to be made. assinged_to_id to use is 226. Priority is 3 (High).
         redmine_instance.issue.update(resource_id=issue.id,
                                       assigned_to_id=226, priority_id=3,
@@ -447,6 +382,94 @@ def verify_folder_name(sequence_folder):
     except ValueError:
         pass
     return properly_formatted
+
+
+def verify_all_the_things(sequence_folder, redmine_instance, issue, work_dir):
+    validation = True
+    if verify_folder_name(sequence_folder) is False:
+        redmine_instance.issue.update(resource_id=issue.id, status_id=4,
+                                      notes='ERROR: The folder name ({}) was not properly formatted. The correct'
+                                            ' format is YYMMDD_LAB. Please create a new folder that is properly named'
+                                            ' and create a new issue.'.format(sequence_folder))
+        validation = False
+
+    # Verify that the sequence folder specified does in fact exist. If it doesn't, give up.
+    if verify_folder_exists(sequence_folder) is False:
+        redmine_instance.issue.update(resource_id=issue.id, status_id=4,
+                                      notes='ERROR: Could not find the folder ({}) specified in this issue on '
+                                            'the FTP. Please ensure that it is uploaded correctly, create a new issue,'
+                                            ' and try again.'.format(sequence_folder))
+        return  # Can't check anything else if the folder doesn't exist.
+
+    # Check that SEQIDs are properly formatted.
+    badly_formatted_fastqs = verify_seqid_formatting(sequence_folder)
+    if len(badly_formatted_fastqs) > 0:
+        redmine_instance.issue.update(resource_id=issue.id, status_id=4,
+                                      notes='ERROR: The following FASTQ files did not have their SEQIDs formatted '
+                                            'correctly: {}\n\nThe correct format is YYYY-LAB-####, where #### is the'
+                                            ' 4-digit sample number. Please rename the files, reupload to the FTP, '
+                                            'and try again.'.format(str(badly_formatted_fastqs)))
+        validation = False
+
+    # Verify that all the files uploaded that are .gz files are at least 100KB. Anything that is smaller than that
+    # almost certainly didn't upload properly. Ignore undetermined.
+    tiny_fastqs = verify_fastq_sizes(sequence_folder)
+    if len(tiny_fastqs) > 0:
+        redmine_instance.issue.update(resource_id=issue.id, status_id=4,
+                                      notes='ERROR: The following FASTQ files had file sizes '
+                                            'smaller than 1KB: {}\n\nThey likely did not upload '
+                                            'properly. Please re-upload to the FTP and create a new '
+                                            'issue.'.format(str(tiny_fastqs)))
+        validation = False
+
+    # Next up, validate that SampleSheet.csv, RunInfo, and GenerateFASTQRunStatistics are present.
+    missing_files = validate_files(sequence_folder)
+    if len(missing_files) > 0:
+        redmine_instance.issue.update(resource_id=issue.id, status_id=4,
+                                      notes='ERROR: The following files were missing from the FTP'
+                                            ' folder: {}\nPlease reupload to '
+                                            'the FTP, including these files ('
+                                            'spelling must be identical!) and'
+                                            ' create a new issue.'.format(str(missing_files)))
+        validation = False
+
+    # Now, download the info sheets (to a temporary folder) and make sure that SEQIDs that are present are good to go.
+    if not os.path.isdir(os.path.join(work_dir, sequence_folder)):
+        os.makedirs(os.path.join(work_dir, sequence_folder))
+    download_info_sheets(sequence_folder, os.path.join(work_dir, sequence_folder))
+    if 'SampleSheet.csv' in missing_files:
+        return
+    else:
+        samplesheet_seqids = get_seqids_from_samplesheet(os.path.join(work_dir, sequence_folder, 'SampleSheet.csv'))
+        missing_seqids = ensure_samples_are_present(samplesheet_seqids, sequence_folder)
+        if len(missing_seqids) > 0:
+            redmine_instance.issue.update(resource_id=issue.id, status_id=4,
+                                          notes='ERROR: The following SEQIDs from SampleSheet.csv could not'
+                                                ' be found in the folder you uploaded to the FTP: {}\nPlease re-upload'
+                                                ' your files to the FTP and create a new issue.'.format(str(missing_seqids)))
+            validation = False
+
+    if 'GenerateFASTQRunStatistics.xml' not in missing_files:
+        samplesheet_seqids = get_seqids_from_samplesheet(os.path.join(work_dir, sequence_folder, 'SampleSheet.csv'))
+        missing_seqids = validate_fastq_run_stats(samplesheet_seqids, os.path.join(work_dir, sequence_folder))
+        if len(missing_seqids) > 0:
+            redmine_instance.issue.update(resource_id=issue.id, status_id=4,
+                                          notes='ERROR: The following SEQIDs from SampleSheet.csv could not'
+                                                ' be found in GenerateFASTQRunStatistics.xml: {}\nPlease re-upload'
+                                                ' your files to the FTP and create a new issue.'.format(str(missing_seqids)))
+            validation = False
+
+    # Now check that the SEQIDs from the SampleSheet don't already exist on the OLC NAS.
+    samplesheet_seqids = get_seqids_from_samplesheet(os.path.join(work_dir, sequence_folder, 'SampleSheet.csv'))
+    shutil.rmtree(os.path.join(work_dir, sequence_folder))
+    duplicate_fastqs = check_for_fastq_on_nas(samplesheet_seqids)
+    if len(duplicate_fastqs) > 0:
+        redmine_instance.issue.update(resource_id=issue.id, status_id=4,
+                                      notes='ERROR: The following SEQIDs already have FASTQ files on the OLC NAS: {}\n'
+                                                'Please rename and reupload your files and create a '
+                                                'new issue.'.format(str(duplicate_fastqs)))
+        validation = False
+    return validation
 
 
 if __name__ == '__main__':
