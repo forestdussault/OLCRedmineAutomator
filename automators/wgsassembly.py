@@ -54,12 +54,13 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
             if validation is False:
                 return
 
+            download_info_sheets(sequence_folder, work_dir)
             redmine_instance.issue.update(resource_id=issue.id, status_id=2,
                                           notes='All validation checks passed - beginning download '
                                                 'and assembly of sequence files.')
 
             # Create the local folder that we'll need.
-            samplesheet_seqids = get_seqids_from_samplesheet(os.path.join(work_dir, sequence_folder, 'SampleSheet.csv'))
+            samplesheet_seqids = get_seqids_from_samplesheet(os.path.join(work_dir, 'SampleSheet.csv'))
             lab_id = samplesheet_seqids[0].split('-')[1]
             if lab_id == 'SEQ':
                 local_folder = os.path.join('/mnt/nas/MiSeq_Backup', sequence_folder)
@@ -197,6 +198,7 @@ def download_dir(ftp_dir, local_dir):
 
 
 def check_for_fastq_on_nas(samplesheet_seqids):
+    # fastq_files_on_nas = glob.glob('/mnt/nas2/raw_sequence_data/miseq/*/*.fastq.gz')
     fastq_files_on_nas = glob.glob('/mnt/nas/MiSeq_Backup/*/*.fastq.gz')
     fastq_files_on_nas += glob.glob('/mnt/nas/External_MiSeq_Backup/*/*/*.fastq.gz')
     duplicate_samples = list()
@@ -399,7 +401,8 @@ def verify_all_the_things(sequence_folder, redmine_instance, issue, work_dir):
                                       notes='ERROR: Could not find the folder ({}) specified in this issue on '
                                             'the FTP. Please ensure that it is uploaded correctly, create a new issue,'
                                             ' and try again.'.format(sequence_folder))
-        return  # Can't check anything else if the folder doesn't exist.
+        validation = False
+        return validation   # Can't check anything else if the folder doesn't exist, so stop here.
 
     # Check that SEQIDs are properly formatted.
     badly_formatted_fastqs = verify_seqid_formatting(sequence_folder)
