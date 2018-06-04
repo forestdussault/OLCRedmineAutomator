@@ -60,12 +60,7 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
                                                 'and assembly of sequence files.')
 
             # Create the local folder that we'll need.
-            samplesheet_seqids = get_seqids_from_samplesheet(os.path.join(work_dir, 'SampleSheet.csv'))
-            lab_id = samplesheet_seqids[0].split('-')[1]
-            if lab_id == 'SEQ':
-                local_folder = os.path.join('/mnt/nas/MiSeq_Backup', sequence_folder)
-            else:
-                local_folder = os.path.join('/mnt/nas/External_MiSeq_Backup', lab_id, sequence_folder)
+            local_folder = os.path.join('/mnt/nas2/raw_sequence_data/miseq', sequence_folder)
 
             if not os.path.isdir(local_folder):
                 os.makedirs(local_folder)
@@ -76,26 +71,15 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
         # Once the folder has been downloaded, copy it to the hdfs and start assembling using docker image.
         cmd = 'cp -r {local_folder} /hdfs'.format(local_folder=local_folder)
         os.system(cmd)
-        # Make sure that any previous docker containers are gone.
-        os.system('docker rm -f spadespipeline')
-        # Run docker image.
-        cmd = 'docker run -i -u $(id -u) -v /mnt/nas/Adam/spadespipeline/OLCspades/:/spadesfiles ' \
-              '-v /mnt/nas/Adam/assemblypipeline/:/pipelinefiles -v  {}:/sequences ' \
-              '--name spadespipeline pipeline:0.1.5 OLCspades.py ' \
-              '/sequences -r /pipelinefiles'.format(os.path.join('/hdfs', sequence_folder))
+        # Run the new pipeline docker image, after making sure it doesn't exist.
+        cmd = 'docker rm -f cowbat'
         os.system(cmd)
-        # Remove the container.
-        os.system('docker rm -f spadespipeline')
-
-        # Now need to move to an appropriate WGSspades folder.
-        if 'External' in local_folder:
-            local_wgs_spades_folder = os.path.join('/mnt/nas/External_WGSspades', lab_id)
-            if not os.path.isdir(local_wgs_spades_folder):
-                os.makedirs(local_wgs_spades_folder)
-        else:
-            local_wgs_spades_folder = '/mnt/nas/WGSspades'
-
-        local_wgs_spades_folder = os.path.join(local_wgs_spades_folder, sequence_folder + '_Assembled')
+        cmd = 'docker run -i -u $(id -u) -v /mnt/nas:/mnt/nas -v /hdfs:/hdfs --name cowbat --rm cowbat:latest /bin/bash -c ' \
+              '"source activate cowbat && assembly_pipeline.py -s {hdfs_folder} -r /mnt/nas/assemblydatabases' \
+              '/0.3.0/databases"'.format(hdfs_folder=os.path.join('/hdfs', sequence_folder))
+        os.system(cmd)
+        # Now need to move to an appropriate processed_sequence_data folder.
+        local_wgs_spades_folder = os.path.join('/mnt/nas2/processed_sequence_data/miseq_assemblies', sequence_folder)
         cmd = 'mv {hdfs_folder} {wgsspades_folder}'.format(hdfs_folder=os.path.join('/hdfs', sequence_folder),
                                                            wgsspades_folder=local_wgs_spades_folder)
         print(cmd)
@@ -142,24 +126,6 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
                                             'Reports and assemblies uploaded to FTP at: ftp://ftp.agr.gc.ca/outgoing/'
                                             'cfia-ak/{}.zip'.format(issue.id))
 
-        # Copy the raw files to the hdfs again, and then we try out the new pipeline.
-        cmd = 'cp -r {local_folder} /hdfs'.format(local_folder=local_folder)
-        os.system(cmd)
-
-        # Run the new pipeline docker image, after making sure it doesn't exist.
-        cmd = 'docker rm -f cowbat'
-        os.system(cmd)
-        cmd = 'docker run -i -u $(id -u) -v /mnt/nas:/mnt/nas -v /hdfs:/hdfs --name cowbat --rm cowbat:latest /bin/bash -c ' \
-              '"source activate cowbat && assembly_pipeline.py -s {hdfs_folder} -r /mnt/nas/assemblydatabases' \
-              '/0.2.3/databases"'.format(hdfs_folder=os.path.join('/hdfs', sequence_folder))
-        os.system(cmd)
-
-        # Move new pipeline result files to scratch for inspection.
-        cmd = 'mv {hdfs_folder} {scratch_folder}'.format(hdfs_folder=os.path.join('/hdfs', sequence_folder),
-                                                         scratch_folder='/mnt/scratch/New_Pipeline_Assemblies')
-        os.system(cmd)
-        redmine_instance.issue.update(resource_id=issue.id,
-                                      notes='WGS Assembly (new pipeline) complete, results stored on scratch.')
     except Exception as e:
         redmine_instance.issue.update(resource_id=issue.id,
                                       notes='Something went wrong! Send this error traceback to your friendly '
