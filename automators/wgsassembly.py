@@ -76,7 +76,7 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
         os.system(cmd)
         cmd = 'docker run -i -u $(id -u) -v /mnt/nas:/mnt/nas -v /hdfs:/hdfs --name cowbat --rm cowbat:latest /bin/bash -c ' \
               '"source activate cowbat && assembly_pipeline.py -s {hdfs_folder} -r /mnt/nas/assemblydatabases' \
-              '/0.3.0/databases"'.format(hdfs_folder=os.path.join('/hdfs', sequence_folder))
+              '/0.3.1"'.format(hdfs_folder=os.path.join('/hdfs', sequence_folder))
         os.system(cmd)
         # Now need to move to an appropriate processed_sequence_data folder.
         local_wgs_spades_folder = os.path.join('/mnt/nas2/processed_sequence_data/miseq_assemblies', sequence_folder)
