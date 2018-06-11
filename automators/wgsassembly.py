@@ -74,8 +74,8 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
         # Run the new pipeline docker image, after making sure it doesn't exist.
         cmd = 'docker rm -f cowbat'
         os.system(cmd)
-        cmd = 'docker run -i -u $(id -u) -v /mnt/nas:/mnt/nas -v /hdfs:/hdfs --name cowbat --rm cowbat:latest /bin/bash -c ' \
-              '"source activate cowbat && assembly_pipeline.py -s {hdfs_folder} -r /mnt/nas/assemblydatabases' \
+        cmd = 'docker run -i -u $(id -u) -v /mnt/nas2:/mnt/nas2 -v /hdfs:/hdfs --name cowbat --rm cowbat:latest /bin/bash -c ' \
+              '"source activate cowbat && assembly_pipeline.py -s {hdfs_folder} -r /mnt/nas2/databases/assemblydatabases' \
               '/0.3.1"'.format(hdfs_folder=os.path.join('/hdfs', sequence_folder))
         os.system(cmd)
         # Now need to move to an appropriate processed_sequence_data folder.
