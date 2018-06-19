@@ -77,16 +77,23 @@ def merge_redmine(redmine_instance, issue, work_dir, description):
 
         redmine_instance.issue.update(resource_id=issue.id,
                                       notes='Merged FASTQ files created, beginning assembly of merged files.')
-        # With files copied over to the HDFS, start the assembly process.
-        os.system('docker rm -f spadespipeline')
-        # Run docker image.
-        cmd = 'docker run -i -u $(id -u) -v /mnt/nas/Adam/spadespipeline/OLCspades/:/spadesfiles ' \
-              '-v /mnt/nas/Adam/assemblypipeline/:/pipelinefiles -v  {}:/sequences ' \
-              '--name spadespipeline pipeline:0.1.5 OLCspades.py ' \
-              '/sequences -r /pipelinefiles'.format(os.path.join('/hdfs', 'merged_' + str(issue.id)))
+        # With files copied over to the HDFS, start the assembly process (Now using new pipeline!)
+        cmd = 'docker rm -f cowbat'
         os.system(cmd)
+        cmd = 'docker run -i -u $(id -u) -v /mnt/nas2:/mnt/nas2 -v /hdfs:/hdfs --name cowbat --rm cowbat:latest /bin/bash -c ' \
+              '"source activate cowbat && assembly_pipeline.py -s {hdfs_folder} -r /mnt/nas2/databases/assemblydatabases' \
+              '/0.3.2"'.format(hdfs_folder=os.path.join('/hdfs', 'merged_' + str(issue.id)))
+        os.system(cmd)
+        # TODO: Clean this up once I'm more sure that new pipeline is actually working.
+        # os.system('docker rm -f spadespipeline')
+        # Run docker image.
+        # cmd = 'docker run -i -u $(id -u) -v /mnt/nas/Adam/spadespipeline/OLCspades/:/spadesfiles ' \
+        #       '-v /mnt/nas/Adam/assemblypipeline/:/pipelinefiles -v  {}:/sequences ' \
+        #       '--name spadespipeline pipeline:0.1.5 OLCspades.py ' \
+        #       '/sequences -r /pipelinefiles'.format(os.path.join('/hdfs', 'merged_' + str(issue.id)))
+        # os.system(cmd)
         # Remove the container.
-        os.system('docker rm -f spadespipeline')
+        # os.system('docker rm -f spadespipeline')
 
         # Move results to merge_WGSspades, and upload the results folder to redmine.
         cmd = 'mv {hdfs_folder} {merge_WGSspades}'.format(hdfs_folder=os.path.join('/hdfs', 'merged_' + str(issue.id)),
