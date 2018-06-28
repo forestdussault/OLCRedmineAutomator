@@ -280,14 +280,26 @@ def main():
                                                  pickles=pickles,
                                                  work_dir=work_dir)
 
-                # Submit job
-                submit_slurm_job(redmine_instance=redmine,
-                                 issue=job,
-                                 work_dir=work_dir,
-                                 cmd=cmd,
-                                 job_type=job_type,
-                                 cpu_count=AUTOMATOR_KEYWORDS[job_type]['n_cpu'],
-                                 memory=AUTOMATOR_KEYWORDS[job_type]['memory'])
+                # Submit job - every job except SNVPhyl gets a static number of cores - for snvphyl,
+                # assign number of cores dynamically based on how many strains user is trying to SNVPhyl at a time.
+                if job_type != 'snvphyl':
+                    submit_slurm_job(redmine_instance=redmine,
+                                     issue=job,
+                                     work_dir=work_dir,
+                                     cmd=cmd,
+                                     job_type=job_type,
+                                     cpu_count=AUTOMATOR_KEYWORDS[job_type]['n_cpu'],
+                                     memory=AUTOMATOR_KEYWORDS[job_type]['memory'])
+                else:
+                    cpu_count = len(description)
+                    memory = 20000
+                    submit_slurm_job(redmine_instance=redmine,
+                                     issue=job,
+                                     work_dir=work_dir,
+                                     cmd=cmd,
+                                     job_type=job_type,
+                                     cpu_count=cpu_count,
+                                     memory=memory)
                 logging.info('----' * 12)
 
         # Pause for 30 seconds
