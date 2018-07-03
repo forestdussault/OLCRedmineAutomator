@@ -64,7 +64,7 @@ def clark_redmine(redmine_instance, issue, work_dir, description):
                                                     ' the OLC NAS: {}'.format(missing_fastas))
 
         # Run CLARK for classification.
-        cmd = 'python -m metagenomefilter.automateCLARK -s {} -d /mnt/nas/Adam/RefseqDatabase/Bos_taurus/ ' \
+        cmd = 'python -m metagenomefilter.automateCLARK -s {} -d /mnt/nas2/databases/assemblydatabases/0.3.2/clark/ ' \
               '-C /home/ubuntu/Programs/CLARKSCV1.2.3.2/ {}\n'.format(work_dir, work_dir)
         os.system(cmd)
 
