@@ -1,6 +1,6 @@
 # User Guide
 
-User guide avaialbe at: http://forestdussault.github.io/OLCRedmineAutomator
+User guide available at: https://olc-bioinformatics.github.io/redmine-docs/
 
 # OLCRedmineAutomator
 
