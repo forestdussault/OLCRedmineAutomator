@@ -1,3 +1,0 @@
-# WGS Assembly
-
-Coming soon...
