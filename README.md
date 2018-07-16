@@ -1,3 +1,7 @@
+# User Guide
+
+User guide avaialbe at: http://forestdussault.github.io/OLCRedmineAutomator
+
 # OLCRedmineAutomator
 
 The OLCRedmineAutomator allows for easy access to a number of
