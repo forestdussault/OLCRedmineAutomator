@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+    
+    <url>
+     <loc>https://forestdussault.github.io/OLCRedmineAutomator/</loc>
+     <lastmod>2018-07-16</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    
+
+    
+    <url>
+     <loc>https://forestdussault.github.io/OLCRedmineAutomator/getting_started/</loc>
+     <lastmod>2018-07-16</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    
+
+    
+        
+    <url>
+     <loc>https://forestdussault.github.io/OLCRedmineAutomator/data/external_retrieve/</loc>
+     <lastmod>2018-07-16</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    
+
+    
+        
+    <url>
+     <loc>https://forestdussault.github.io/OLCRedmineAutomator/analysis/snvphyl/</loc>
+     <lastmod>2018-07-16</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>https://forestdussault.github.io/OLCRedmineAutomator/analysis/confindr/</loc>
+     <lastmod>2018-07-16</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>https://forestdussault.github.io/OLCRedmineAutomator/analysis/wgsassembly/</loc>
+     <lastmod>2018-07-16</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>https://forestdussault.github.io/OLCRedmineAutomator/analysis/autoclark/</loc>
+     <lastmod>2018-07-16</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>https://forestdussault.github.io/OLCRedmineAutomator/analysis/diversitree/</loc>
+     <lastmod>2018-07-16</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>https://forestdussault.github.io/OLCRedmineAutomator/analysis/strainmash/</loc>
+     <lastmod>2018-07-16</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>https://forestdussault.github.io/OLCRedmineAutomator/analysis/resfinder/</loc>
+     <lastmod>2018-07-16</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>https://forestdussault.github.io/OLCRedmineAutomator/analysis/mobsuite/</loc>
+     <lastmod>2018-07-16</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    
+
+    
+    <url>
+     <loc>https://forestdussault.github.io/OLCRedmineAutomator/troubleshooting/</loc>
+     <lastmod>2018-07-16</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    
+
+</urlset>
