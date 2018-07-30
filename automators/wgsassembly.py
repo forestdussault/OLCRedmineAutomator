@@ -85,6 +85,11 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
         print(cmd)
         os.system(cmd)
 
+        # Remove the raw sequence files from processed_sequence_data, since we already have them in raw.
+        cmd = 'rm {fastq_files}'.format(fastq_files=os.path.join(local_wgs_spades_folder, '*.fastq.gz'))
+        print(cmd)
+        os.system(cmd)
+
         # Upload the results of the sequencing run to Redmine.
         cmd = 'cp {samplesheet} {reports_folder}'.format(samplesheet=os.path.join(local_wgs_spades_folder, 'SampleSheet.csv'),
                                                          reports_folder=os.path.join(local_wgs_spades_folder, 'reports'))
