@@ -56,6 +56,7 @@ def merge_redmine(redmine_instance, issue, work_dir, description):
             os.path.join(work_dir, 'Merge.xlsx'), work_dir)
         os.system(cmd)
 
+        issue.watcher.add(226)  # Add Paul so he can put results into DB.
         # Make a folder to put all the merged FASTQs in biorequest folder. and put the merged FASTQs there.
         os.makedirs(os.path.join(work_dir, 'merged_' + str(issue.id)))
         cmd = 'mv {merged_files} {merged_folder}'.format(merged_files=os.path.join(work_dir, '*MER*/*.fastq.gz'),
