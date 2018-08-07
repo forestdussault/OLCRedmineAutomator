@@ -412,7 +412,7 @@ def verify_all_the_things(sequence_folder, redmine_instance, issue, work_dir):
         os.makedirs(os.path.join(work_dir, sequence_folder))
     download_info_sheets(sequence_folder, os.path.join(work_dir, sequence_folder))
     if 'SampleSheet.csv' in missing_files:
-        return
+        return False
     else:
         samplesheet_seqids = get_seqids_from_samplesheet(os.path.join(work_dir, sequence_folder, 'SampleSheet.csv'))
         missing_seqids = ensure_samples_are_present(samplesheet_seqids, sequence_folder)
