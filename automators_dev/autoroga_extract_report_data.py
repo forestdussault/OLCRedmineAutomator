@@ -118,6 +118,34 @@ def validate_ecoli(seq_list, metadata_reports):
     return ecoli_seq_status
 
 
+def validate_vibrio(seq_list, metadata_reports):
+    """
+    Checks combined metadata for presence of r72h and/or groEL in the GeneSeekr_Profile column
+    :param seq_list: List of OLC Seq IDs
+    :param metadata_reports: dictionary retrived from get_combined_metadata()
+    :return: dict with pair of SeqID:boolean where True means GeneSeekr confirms the identity
+    """
+    vibrio_seq_status = dict()
+    for seqid in seq_list:
+        print('Validating {} r72h OR groEL marker detection for Vibrio'.format(seqid))
+        df = metadata_reports[seqid]
+        observed_genus = df.loc[df['SeqID'] == seqid]['Genus'].values[0]
+        r72h_present = False
+        groel_present = False
+
+        if observed_genus == 'Vibrio':
+            if 'groEL' in df.loc[df['SeqID'] == seqid]['GeneSeekr_Profile'].values[0]:
+                groel_present = True
+            if 'r72h' in df.loc[df['SeqID'] == seqid]['GeneSeekr_Profile'].values[0]:
+                r72h_present = True
+
+        if groel_present is True or r72h_present is True:
+            vibrio_seq_status[seqid] = True
+        else:
+            vibrio_seq_status[seqid] = False
+    return vibrio_seq_status
+
+
 def validate_salmonella(seq_list, metadata_reports):
     """
     Checks combined metadata for presence of invA or stn in the GeneSeekr_Profile column
