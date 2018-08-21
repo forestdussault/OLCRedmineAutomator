@@ -164,7 +164,7 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
 
         # Parse Seq IDs
         try:
-            seqids, lstsids = parse_seqid_list(description)
+            seqids, lstsids = parse_seqid_list(description, starting_row=4)
         except:
             redmine_instance.issue.update(resource_id=issue.id, status_id=4,
                                           notes='ERROR: Could not pair Seq IDs and LSTS IDs from the provided '
@@ -690,7 +690,7 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
     return pdf_file
 
 
-def parse_seqid_list(description):
+def parse_seqid_list(description, starting_row=3):
     seqids = list()
     lstsids = list()
 
@@ -698,7 +698,7 @@ def parse_seqid_list(description):
     description = [x.replace(' ', '') for x in description]
 
     try:
-        for item in description[3:]:
+        for item in description[starting_row:]:
             seqid_item = None
             lstsid_item = None
 
