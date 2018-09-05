@@ -69,7 +69,7 @@ def merge_redmine(redmine_instance, issue, work_dir, description):
                                           status_id=4)
             return
         # Now copy those merged FASTQS to merge backup and the hdfs folder so they can be assembled.
-        cmd = 'cp {merged_files} /mnt/nas/merge_Backup'.format(merged_files=os.path.join(work_dir, 'merged_' + str(issue.id),
+        cmd = 'cp {merged_files} /mnt/nas2/raw_sequence_data/merged_sequences'.format(merged_files=os.path.join(work_dir, 'merged_' + str(issue.id),
                                                                                          '*.fastq.gz'))
         os.system(cmd)
 
@@ -85,20 +85,10 @@ def merge_redmine(redmine_instance, issue, work_dir, description):
               '"source activate cowbat && assembly_pipeline.py -s {hdfs_folder} -r /mnt/nas2/databases/assemblydatabases' \
               '/0.3.2"'.format(hdfs_folder=os.path.join('/hdfs', 'merged_' + str(issue.id)))
         os.system(cmd)
-        # TODO: Clean this up once I'm more sure that new pipeline is actually working.
-        # os.system('docker rm -f spadespipeline')
-        # Run docker image.
-        # cmd = 'docker run -i -u $(id -u) -v /mnt/nas/Adam/spadespipeline/OLCspades/:/spadesfiles ' \
-        #       '-v /mnt/nas/Adam/assemblypipeline/:/pipelinefiles -v  {}:/sequences ' \
-        #       '--name spadespipeline pipeline:0.1.5 OLCspades.py ' \
-        #       '/sequences -r /pipelinefiles'.format(os.path.join('/hdfs', 'merged_' + str(issue.id)))
-        # os.system(cmd)
-        # Remove the container.
-        # os.system('docker rm -f spadespipeline')
 
         # Move results to merge_WGSspades, and upload the results folder to redmine.
         cmd = 'mv {hdfs_folder} {merge_WGSspades}'.format(hdfs_folder=os.path.join('/hdfs', 'merged_' + str(issue.id)),
-                                                          merge_WGSspades=os.path.join('/mnt/nas/merge_WGSspades',
+                                                          merge_WGSspades=os.path.join('/mnt/nas2/processed_sequence_data/merged_assemblies',
                                                           'merged_' + str(issue.id) + '_Assembled'))
         os.system(cmd)
         shutil.make_archive(os.path.join(work_dir, 'reports'), 'zip', os.path.join('/mnt/nas/merge_WGSspades', 'merged_' + str(issue.id) + '_Assembled', 'reports'))
