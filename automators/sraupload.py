@@ -46,7 +46,7 @@ def externalretrieve_redmine(redmine_instance, issue, work_dir, description):
         renamed_fastqs = rename_files(fastq_dir=work_dir)
 
         # Now need to login to the FTP to upload the zipped folder.
-        s = ftplib.FTP('ftp-private.ncbi.nlm.nih.giv', user=SRA_FTP_USERNAME, passwd=SRA_FTP_PASSWORD)
+        s = ftplib.FTP('ftp-private.ncbi.nlm.nih.gov', user=SRA_FTP_USERNAME, passwd=SRA_FTP_PASSWORD)
         s.cwd(SRA_FTP_FOLDER)
         s.mkd(str(issue.id))
         s.cwd(str(issue.id))
