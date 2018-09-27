@@ -291,7 +291,10 @@ def main():
                                      cpu_count=AUTOMATOR_KEYWORDS[job_type]['n_cpu'],
                                      memory=AUTOMATOR_KEYWORDS[job_type]['memory'])
                 else:
-                    cpu_count = len(description)
+                    if len(description) > 55:
+                        cpu_count = 55
+                    else:
+                        cpu_count = len(description)
                     memory = 20000
                     submit_slurm_job(redmine_instance=redmine,
                                      issue=job,
