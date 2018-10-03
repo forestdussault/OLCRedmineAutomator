@@ -41,6 +41,7 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
             local_folder = sequence_folder
             samplesheet_seqids = get_seqids_from_samplesheet(os.path.join(sequence_folder, 'SampleSheet.csv'))
             lab_id = samplesheet_seqids[0].split('-')[1]
+            sequence_folder = os.path.split(local_folder)[1]
 
         # Otherwise, do all verification checks on the FTP and download files.
         else:
@@ -152,6 +153,7 @@ def check_if_file(file_name, ftp_dir):
 
 def download_dir(ftp_dir, local_dir):
     ftp = FTP('ftp.agr.gc.ca', user=FTP_USERNAME, passwd=FTP_PASSWORD)
+    ftp.set_debuglevel(level=2)  # Set debug level to maximum verbosity to try to figure out why things are hanging.
     ftp.cwd(os.path.join('incoming/cfia-ak', ftp_dir))
     present_in_folder = ftp.nlst()
     for item in present_in_folder:
