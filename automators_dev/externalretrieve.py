@@ -75,7 +75,6 @@ def externalretrieve_redmine(redmine_instance, issue, work_dir, description):
         # Now need to login to the FTP to upload the zipped folder.
         # Lots of FTP issues lately - in the event that upload does not work, a timeout will occur.
         # Allow for up to 10 attempts at uploading. TODO: Try to resume upload instead of redoing the whole thing.
-
         num_upload_attempts = 0
         while num_upload_attempts < 10:
             try:
@@ -87,6 +86,12 @@ def externalretrieve_redmine(redmine_instance, issue, work_dir, description):
                 s.quit()
                 break
             except socket.timeout:
+                s = ftplib.FTP('ftp.agr.gc.ca', user=FTP_USERNAME, passwd=FTP_PASSWORD, timeout=30)
+                s.cwd('outgoing/cfia-ak')
+                uploaded_file_size = s.size('{}.zip'.format(issue.id))
+                s.quit()
+                if uploaded_file_size == os.path.getsize(os.path.join(work_dir, str(issue.id) + '.zip')):
+                    break
                 num_upload_attempts += 1
 
         # And finally, do some file cleanup.
