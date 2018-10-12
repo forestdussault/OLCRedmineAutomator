@@ -5,9 +5,10 @@ import glob
 import click
 import pickle
 import shutil
+import socket
 import fnmatch
 import xml.etree.ElementTree as et
-
+from externalretrieve import upload_to_ftp
 from ftplib import FTP
 from automator_settings import FTP_USERNAME, FTP_PASSWORD
 import traceback
@@ -67,7 +68,14 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
                 os.makedirs(local_folder)
 
             # Download the folder, recursively!
-            download_dir(sequence_folder, local_folder)
+            download_successful = download_dir(sequence_folder, local_folder)
+
+            if download_successful is False:
+                redmine_instance.issue.update(resource_id=issue.id,
+                                              assigned_to_id=296,
+                                              subject='WGS Assembly: {}'.format(description[0]),
+                                              notes='Download of files from FTP was not successful.')
+                return
 
         # Once the folder has been downloaded, copy it to the hdfs and start assembling using docker image.
         cmd = 'cp -r {local_folder} /hdfs'.format(local_folder=local_folder)
@@ -116,21 +124,23 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
 
         # At this point, zip folder has been created (hopefully) called issue_id.zip in biorequest dir. Upload that
         # to the FTP.
-        s = FTP('ftp.agr.gc.ca', user=FTP_USERNAME, passwd=FTP_PASSWORD)
-        s.cwd('outgoing/cfia-ak')
-        f = open(os.path.join(work_dir, str(issue.id) + '.zip'), 'rb')
-        s.storbinary('STOR {}.zip'.format(str(issue.id)), f)
-        f.close()
-        s.quit()
+        upload_successful = upload_to_ftp(local_folder=os.path.join(work_dir, str(issue.id) + '.zip'))
 
         # Make redmine tell Paul that a run has finished and that we should add things to our DB so things don't get missed
         # to be made. assinged_to_id to use is 226. Priority is 3 (High).
-        redmine_instance.issue.update(resource_id=issue.id,
-                                      assigned_to_id=226, priority_id=3,
-                                      subject='WGS Assembly: {}'.format(description[0]), # Add run name to subject
-                                      notes='This run has finished assembly! Please add it to the OLC Database.\n'
-                                            'Reports and assemblies uploaded to FTP at: ftp://ftp.agr.gc.ca/outgoing/'
-                                            'cfia-ak/{}.zip'.format(issue.id))
+        if upload_successful:
+            redmine_instance.issue.update(resource_id=issue.id,
+                                          assigned_to_id=226, priority_id=3,
+                                          subject='WGS Assembly: {}'.format(description[0]), # Add run name to subject
+                                          notes='This run has finished assembly! Please add it to the OLC Database.\n'
+                                                'Reports and assemblies uploaded to FTP at: ftp://ftp.agr.gc.ca/outgoing/'
+                                                'cfia-ak/{}.zip'.format(issue.id))
+        else:
+            redmine_instance.issue.update(resource_id=issue.id,
+                                          assigned_to_id=296,
+                                          subject='WGS Assembly: {}'.format(description[0]),
+                                          notes='Upload of result files was not successful. Upload them manually!')
+
 
     except Exception as e:
         redmine_instance.issue.update(resource_id=issue.id,
@@ -151,23 +161,53 @@ def check_if_file(file_name, ftp_dir):
     return is_file
 
 
+def download_ftp_file(ftp_file, local_dir):
+    num_download_attempts = 0
+    download_successful = False
+    while num_download_attempts < 10:
+        # Try downloading - if timeout, check if the download managed to complete but hang at the end, which happens
+        # sometimes. If it did complete, we're good to go. Otherwise, try again.
+        try:
+            s = FTP('ftp.agr.gc.ca', user=FTP_USERNAME, passwd=FTP_PASSWORD, timeout=30)
+            s.cwd('outgoing/cfia-ak')
+            local_path = os.path.join(local_dir, os.path.split(ftp_file)[1])
+            f = open(local_path, 'wb')
+            s.retrbinary('RETR ' + ftp_file, f.write)
+            f.close()
+            s.quit()
+            download_successful = True
+            break
+        except socket.timeout:
+            local_path = os.path.join(local_dir, os.path.split(ftp_file)[1])
+            s = FTP('ftp.agr.gc.ca', user=FTP_USERNAME, passwd=FTP_PASSWORD, timeout=30)
+            s.cwd('outgoing/cfia-ak')
+            ftp_file_size = s.size(ftp_file)
+            s.quit()
+            if ftp_file_size == os.path.getsize(local_path):
+                download_successful = True
+                break
+            num_download_attempts += 1
+    return download_successful
+
+
 def download_dir(ftp_dir, local_dir):
+    all_downloads_successful = True
     ftp = FTP('ftp.agr.gc.ca', user=FTP_USERNAME, passwd=FTP_PASSWORD)
     ftp.set_debuglevel(level=2)  # Set debug level to maximum verbosity to try to figure out why things are hanging.
     ftp.cwd(os.path.join('incoming/cfia-ak', ftp_dir))
     present_in_folder = ftp.nlst()
     for item in present_in_folder:
         if check_if_file(item, ftp_dir):
-            local_path = os.path.join(local_dir, item)
-            print(local_path)
-            f = open(local_path, 'wb')
-            ftp.retrbinary('RETR ' + item, f.write)
-            f.close()
+            download_successful = download_ftp_file(ftp_file=item, local_dir=local_dir)
+            if download_successful is False:
+                all_downloads_successful = False
         else:
             if not os.path.isdir(os.path.join(local_dir, item)):
                 os.makedirs(os.path.join(local_dir, item))
             download_dir(os.path.join(ftp_dir, item), os.path.join(local_dir, item))
     ftp.quit()
+    return all_downloads_successful
+
 
 
 def check_for_fastq_on_nas(samplesheet_seqids):
