@@ -169,7 +169,7 @@ def download_ftp_file(ftp_file, local_dir):
         # sometimes. If it did complete, we're good to go. Otherwise, try again.
         try:
             s = FTP('ftp.agr.gc.ca', user=FTP_USERNAME, passwd=FTP_PASSWORD, timeout=30)
-            s.cwd('outgoing/cfia-ak')
+            s.cwd('incoming/cfia-ak')
             local_path = os.path.join(local_dir, os.path.split(ftp_file)[1])
             f = open(local_path, 'wb')
             s.retrbinary('RETR ' + ftp_file, f.write)
@@ -180,7 +180,7 @@ def download_ftp_file(ftp_file, local_dir):
         except socket.timeout:
             local_path = os.path.join(local_dir, os.path.split(ftp_file)[1])
             s = FTP('ftp.agr.gc.ca', user=FTP_USERNAME, passwd=FTP_PASSWORD, timeout=30)
-            s.cwd('outgoing/cfia-ak')
+            s.cwd('incoming/cfia-ak')
             ftp_file_size = s.size(ftp_file)
             s.quit()
             if ftp_file_size == os.path.getsize(local_path):
@@ -198,7 +198,8 @@ def download_dir(ftp_dir, local_dir):
     present_in_folder = ftp.nlst()
     for item in present_in_folder:
         if check_if_file(item, ftp_dir):
-            download_successful = download_ftp_file(ftp_file=item, local_dir=local_dir)
+            ftp_file = os.path.join(ftp_dir, item)
+            download_successful = download_ftp_file(ftp_file=ftp_file, local_dir=local_dir)
             if download_successful is False:
                 all_downloads_successful = False
         else:
