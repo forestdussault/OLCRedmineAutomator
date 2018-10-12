@@ -4,6 +4,7 @@ import click
 import ftplib
 import pickle
 import shutil
+from externalretrieve import upload_to_ftp
 from automator_settings import FTP_USERNAME, FTP_PASSWORD
 
 
@@ -67,13 +68,7 @@ def reportretrieve_redmine(redmine_instance, issue, work_dir, description):
                             format='zip',
                             base_name=os.path.join(work_dir, str(issue.id)))
 
-        # Now need to login to the FTP to upload the zipped folder.
-        s = ftplib.FTP('ftp.agr.gc.ca', user=FTP_USERNAME, passwd=FTP_PASSWORD)
-        s.cwd('outgoing/cfia-ak')
-        f = open(os.path.join(work_dir, str(issue.id) + '.zip'), 'rb')
-        s.storbinary('STOR {}.zip'.format(str(issue.id)), f)
-        f.close()
-        s.quit()
+        upload_successful = upload_to_ftp(local_file=os.path.join(work_dir, str(issue.id) + '.zip'))
 
         # And finally, do some file cleanup.
         try:
@@ -82,10 +77,16 @@ def reportretrieve_redmine(redmine_instance, issue, work_dir, description):
         except:
             pass
 
-        redmine_instance.issue.update(resource_id=issue.id, status_id=4,
-                                      notes='Report Retrieve process complete!\n\n'
-                                            'Results are available at the following FTP address:\n'
-                                            'ftp://ftp.agr.gc.ca/outgoing/cfia-ak/{}'.format(str(issue.id) + '.zip'))
+        if upload_successful:
+            redmine_instance.issue.update(resource_id=issue.id, status_id=4,
+                                          notes='Report Retrieve process complete!\n\n'
+                                                'Results are available at the following FTP address:\n'
+                                                'ftp://ftp.agr.gc.ca/outgoing/cfia-ak/{}'.format(str(issue.id) + '.zip'))
+        else:
+            redmine_instance.issue.update(resource_id=issue.id, status_id=4,
+                                          notes='Upload of result files was unsuccessful due to FTP connectivity issues. '
+                                                'Please try again later.')
+
     except Exception as e:
         redmine_instance.issue.update(resource_id=issue.id,
                                       notes='Something went wrong! Send this error traceback to your friendly '

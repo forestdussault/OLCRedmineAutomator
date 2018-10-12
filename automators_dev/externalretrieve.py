@@ -75,24 +75,7 @@ def externalretrieve_redmine(redmine_instance, issue, work_dir, description):
         # Now need to login to the FTP to upload the zipped folder.
         # Lots of FTP issues lately - in the event that upload does not work, a timeout will occur.
         # Allow for up to 10 attempts at uploading. If upload has completed and we stall at the end, allow.
-        num_upload_attempts = 0
-        while num_upload_attempts < 10:
-            try:
-                s = ftplib.FTP('ftp.agr.gc.ca', user=FTP_USERNAME, passwd=FTP_PASSWORD, timeout=30)
-                s.cwd('outgoing/cfia-ak')
-                f = open(os.path.join(work_dir, str(issue.id) + '.zip'), 'rb')
-                s.storbinary('STOR {}.zip'.format(str(issue.id)), f)
-                f.close()
-                s.quit()
-                break
-            except socket.timeout:
-                s = ftplib.FTP('ftp.agr.gc.ca', user=FTP_USERNAME, passwd=FTP_PASSWORD, timeout=30)
-                s.cwd('outgoing/cfia-ak')
-                uploaded_file_size = s.size('{}.zip'.format(issue.id))
-                s.quit()
-                if uploaded_file_size == os.path.getsize(os.path.join(work_dir, str(issue.id) + '.zip')):
-                    break
-                num_upload_attempts += 1
+        upload_successful = upload_to_ftp(local_file=os.path.join(work_dir, str(issue.id) + '.zip'))
 
         # And finally, do some file cleanup.
         try:
@@ -101,20 +84,53 @@ def externalretrieve_redmine(redmine_instance, issue, work_dir, description):
         except:
             pass
 
-        if num_upload_attempts >= 10:
+        if upload_successful is False:
             redmine_instance.issue.update(resource_id=issue.id, status_id=4,
                                           notes='There are connection issues with the FTP site. Unable to complete '
                                                 'external retrieve process. Please try again later.')
-            return
-
-        redmine_instance.issue.update(resource_id=issue.id, status_id=4,
-                                      notes='External Retrieve process complete!\n\n'
-                                            'Results are available at the following FTP address:\n'
-                                            'ftp://ftp.agr.gc.ca/outgoing/cfia-ak/{}'.format(str(issue.id) + '.zip'))
+        else:
+            redmine_instance.issue.update(resource_id=issue.id, status_id=4,
+                                          notes='External Retrieve process complete!\n\n'
+                                                'Results are available at the following FTP address:\n'
+                                                'ftp://ftp.agr.gc.ca/outgoing/cfia-ak/{}'.format(str(issue.id) + '.zip'))
     except Exception as e:
         redmine_instance.issue.update(resource_id=issue.id,
                                       notes='Something went wrong! Send this error traceback to your friendly '
                                             'neighborhood bioinformatician: {}'.format(e))
+
+
+def upload_to_ftp(local_file):
+    """
+    Since our FTP site has been misbehaving, we now get to have a special FTP uploader that tries to
+    upload multiple times (up to 10).
+    :param local_file: File that you want to upload to the FTP. Will be uploaded with the same name that
+    the local file has.
+    :return: True if upload ended up being successful, False if even after 10 tries the upload didn't work.
+    """
+    num_upload_attempts = 0
+    upload_successful = False
+    while num_upload_attempts < 10:
+        # Try uploading - if timeout, check if the upload managed to complete but hang at the end, which happens
+        # sometimes. If it did complete, we're good to go. Otherwise, try again.
+        try:
+            s = ftplib.FTP('ftp.agr.gc.ca', user=FTP_USERNAME, passwd=FTP_PASSWORD, timeout=30)
+            s.cwd('outgoing/cfia-ak')
+            f = open(local_file, 'rb')
+            s.storbinary('STOR {}'.format(os.path.split(local_file)[1]), f)
+            f.close()
+            s.quit()
+            upload_successful = True
+            break
+        except socket.timeout:
+            s = ftplib.FTP('ftp.agr.gc.ca', user=FTP_USERNAME, passwd=FTP_PASSWORD, timeout=30)
+            s.cwd('outgoing/cfia-ak')
+            uploaded_file_size = s.size(os.path.split(local_file)[1])
+            s.quit()
+            if uploaded_file_size == os.path.getsize(local_file):
+                upload_successful = True
+                break
+            num_upload_attempts += 1
+    return upload_successful
 
 
 def check_fastas_present(fasta_list, fasta_dir):
