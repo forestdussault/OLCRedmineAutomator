@@ -210,6 +210,18 @@ def download_dir(ftp_dir, local_dir):
     return all_downloads_successful
 
 
+def quit_ftp(ftp_object):
+    """
+    Apparently our connection to the FTP is so good that sometimes we can manage to get a timeout when
+    trying to quit the FTP. This function will try to call quit(), will give up and not error out when a timeout happens
+    :param ftp_object: An instantiated FTP object from python's ftplib
+    """
+    try:
+        ftp_object.quit()
+    except TimeoutError:
+        print('Timeout occurred when trying to close connection to the FTP. Ignoring the problem!')
+
+
 
 def check_for_fastq_on_nas(samplesheet_seqids):
     # fastq_files_on_nas = glob.glob('/mnt/nas2/raw_sequence_data/miseq/*/*.fastq.gz')
