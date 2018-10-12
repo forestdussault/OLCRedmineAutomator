@@ -4,6 +4,7 @@ import click
 import ftplib
 import pickle
 import shutil
+import socket
 from nastools.nastools import retrieve_nas_files
 from automator_settings import FTP_USERNAME, FTP_PASSWORD
 
@@ -72,12 +73,26 @@ def externalretrieve_redmine(redmine_instance, issue, work_dir, description):
                             base_name=os.path.join(work_dir, str(issue.id)))
 
         # Now need to login to the FTP to upload the zipped folder.
-        s = ftplib.FTP('ftp.agr.gc.ca', user=FTP_USERNAME, passwd=FTP_PASSWORD)
-        s.cwd('outgoing/cfia-ak')
-        f = open(os.path.join(work_dir, str(issue.id) + '.zip'), 'rb')
-        s.storbinary('STOR {}.zip'.format(str(issue.id)), f)
-        f.close()
-        s.quit()
+        # Lots of FTP issues lately - in the event that upload does not work, a timeout will occur.
+        # Allow for up to 10 attempts at uploading. If upload has completed and we stall at the end, allow.
+        num_upload_attempts = 0
+        while num_upload_attempts < 10:
+            try:
+                s = ftplib.FTP('ftp.agr.gc.ca', user=FTP_USERNAME, passwd=FTP_PASSWORD, timeout=30)
+                s.cwd('outgoing/cfia-ak')
+                f = open(os.path.join(work_dir, str(issue.id) + '.zip'), 'rb')
+                s.storbinary('STOR {}.zip'.format(str(issue.id)), f)
+                f.close()
+                s.quit()
+                break
+            except socket.timeout:
+                s = ftplib.FTP('ftp.agr.gc.ca', user=FTP_USERNAME, passwd=FTP_PASSWORD, timeout=30)
+                s.cwd('outgoing/cfia-ak')
+                uploaded_file_size = s.size('{}.zip'.format(issue.id))
+                s.quit()
+                if uploaded_file_size == os.path.getsize(os.path.join(work_dir, str(issue.id) + '.zip')):
+                    break
+                num_upload_attempts += 1
 
         # And finally, do some file cleanup.
         try:
@@ -85,6 +100,12 @@ def externalretrieve_redmine(redmine_instance, issue, work_dir, description):
             os.remove(os.path.join(work_dir, str(issue.id) + '.zip'))
         except:
             pass
+
+        if num_upload_attempts >= 10:
+            redmine_instance.issue.update(resource_id=issue.id, status_id=4,
+                                          notes='There are connection issues with the FTP site. Unable to complete '
+                                                'external retrieve process. Please try again later.')
+            return
 
         redmine_instance.issue.update(resource_id=issue.id, status_id=4,
                                       notes='External Retrieve process complete!\n\n'

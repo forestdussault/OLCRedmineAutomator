@@ -74,7 +74,7 @@ def externalretrieve_redmine(redmine_instance, issue, work_dir, description):
 
         # Now need to login to the FTP to upload the zipped folder.
         # Lots of FTP issues lately - in the event that upload does not work, a timeout will occur.
-        # Allow for up to 10 attempts at uploading. TODO: Try to resume upload instead of redoing the whole thing.
+        # Allow for up to 10 attempts at uploading. If upload has completed and we stall at the end, allow.
         num_upload_attempts = 0
         while num_upload_attempts < 10:
             try:
