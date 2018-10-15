@@ -39,6 +39,10 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
             redmine_instance.issue.update(resource_id=issue.id, status_id=2,
                                           notes='Attempting to use files already on NAS. Only use this option if you'
                                                 ' really know what you\'re doing!')
+            # os.path.split does not work as I thought it did. Apparently if a trailing slash is present, last element
+            # it returns is '', not the final folder in the path. This fixes that.
+            if sequence_folder.endswith('/'):
+                sequence_folder = sequence_folder[:-1]
             local_folder = sequence_folder
             samplesheet_seqids = get_seqids_from_samplesheet(os.path.join(sequence_folder, 'SampleSheet.csv'))
             lab_id = samplesheet_seqids[0].split('-')[1]
@@ -124,7 +128,7 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
 
         # At this point, zip folder has been created (hopefully) called issue_id.zip in biorequest dir. Upload that
         # to the FTP.
-        upload_successful = upload_to_ftp(local_folder=os.path.join(work_dir, str(issue.id) + '.zip'))
+        upload_successful = upload_to_ftp(local_file=os.path.join(work_dir, str(issue.id) + '.zip'))
 
         # Make redmine tell Paul that a run has finished and that we should add things to our DB so things don't get missed
         # to be made. assinged_to_id to use is 226. Priority is 3 (High).
