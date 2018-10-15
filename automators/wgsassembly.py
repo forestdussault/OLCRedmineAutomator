@@ -161,7 +161,8 @@ def check_if_file(file_name, ftp_dir):
         ftp.size(file_name)
     except:
         is_file = False
-    ftp.quit()
+    # ftp.quit()
+    quit_ftp(ftp)
     return is_file
 
 
@@ -178,7 +179,8 @@ def download_ftp_file(ftp_file, local_dir):
             f = open(local_path, 'wb')
             s.retrbinary('RETR ' + ftp_file, f.write)
             f.close()
-            s.quit()
+            # s.quit()
+            quit_ftp(s)
             download_successful = True
             break
         except socket.timeout:
@@ -186,7 +188,8 @@ def download_ftp_file(ftp_file, local_dir):
             s = FTP('ftp.agr.gc.ca', user=FTP_USERNAME, passwd=FTP_PASSWORD, timeout=30)
             s.cwd('incoming/cfia-ak')
             ftp_file_size = s.size(ftp_file)
-            s.quit()
+            # s.quit()
+            quit_ftp(s)
             if ftp_file_size == os.path.getsize(local_path):
                 download_successful = True
                 break
@@ -210,7 +213,8 @@ def download_dir(ftp_dir, local_dir):
             if not os.path.isdir(os.path.join(local_dir, item)):
                 os.makedirs(os.path.join(local_dir, item))
             download_dir(os.path.join(ftp_dir, item), os.path.join(local_dir, item))
-    ftp.quit()
+    quit_ftp(ftp)
+    # ftp.quit()
     return all_downloads_successful
 
 
@@ -273,8 +277,10 @@ def ensure_samples_are_present(samplesheet_seqids, sequence_folder):
                 reverse_found = True
         if forward_found is False or reverse_found is False:
             missing_samples.append(seqid)
-    ftp.quit()
+    # ftp.quit()
+    quit_ftp(ftp)
     return missing_samples
+
 
 
 def get_seqids_from_samplesheet(samplesheet):
@@ -309,7 +315,8 @@ def validate_files(file_name):
         missing_files.append('RunInfo.xml')
     if 'GenerateFASTQRunStatistics.xml' not in files_present:
         missing_files.append('GenerateFASTQRunStatistics.xml')
-    ftp.quit()
+    # ftp.quit()
+    quit_ftp(ftp)
     return missing_files
 
 
@@ -324,7 +331,8 @@ def download_info_sheets(sequence_folder, local_folder):
             f.close()
         except:
             pass
-    ftp.quit()
+    # ftp.quit()
+    quit_ftp(ftp)
 
 
 def verify_fastq_sizes(sequence_folder):
@@ -337,7 +345,8 @@ def verify_fastq_sizes(sequence_folder):
             file_size = ftp.size(item)
             if file_size < 1000:
                 tiny_fastqs.append(item)
-    ftp.quit()
+    # ftp.quit()
+    quit_ftp(ftp)
     return tiny_fastqs
 
 
@@ -377,7 +386,8 @@ def verify_seqid_formatting(sequence_folder):
                     wrong_formatting = True
             if wrong_formatting:
                 badly_formatted_files.append(item)
-    ftp.quit()
+    quit_ftp(ftp)
+    # ftp.quit()
     return badly_formatted_files
 
 
@@ -389,7 +399,8 @@ def verify_folder_exists(sequence_folder):
         folder_exists = True
     else:
         folder_exists = False
-    ftp.quit()
+    # ftp.quit()
+    quit_ftp(ftp)
     return folder_exists
 
 
