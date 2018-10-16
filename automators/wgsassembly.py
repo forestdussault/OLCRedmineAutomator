@@ -190,9 +190,10 @@ def download_ftp_file(ftp_file, local_dir):
             ftp_file_size = s.size(ftp_file)
             # s.quit()
             quit_ftp(s)
-            if ftp_file_size == os.path.getsize(local_path):
-                download_successful = True
-                break
+            if os.path.isfile(local_path):
+                if ftp_file_size == os.path.getsize(local_path):
+                    download_successful = True
+                    break
             num_download_attempts += 1
     return download_successful
 
