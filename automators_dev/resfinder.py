@@ -34,23 +34,23 @@ def resfinder_redmine(redmine_instance, issue, work_dir, description):
                                           notes='WARNING: Could not find the following requested SEQIDs on'
                                                 ' the OLC NAS: {}'.format(missing_fastas))
 
-        # Run CLARK for classification.
-        cmd = 'python -m spadespipeline.GeneSeekr -s {seqfolder} -t {targetfolder} -r {reportdir} -R'\
+        # Run ResFindr
+        cmd = 'GeneSeekr blastn -s {seqfolder} -t {targetfolder} -r {reportdir} -R'\
             .format(seqfolder=work_dir,
-                    targetfolder='/mnt/nas/assemblydatabases/0.2.3/databases/resfinder',
+                    targetfolder='/mnt/nas2/databases/assemblydatabases/0.3.4/resfinder',
                     reportdir=os.path.join(work_dir, 'reports'))
         print(cmd)
         os.system(cmd)
         # Get the output file uploaded.
         output_list = list()
         output_dict = dict()
-        output_dict['path'] = os.path.join(work_dir, 'reports', 'resfinder.xlsx')
-        output_dict['filename'] = 'resfinder.xlsx'
+        output_dict['path'] = os.path.join(work_dir, 'reports', 'resfinder_blastn.xlsx')
+        output_dict['filename'] = 'resfinder_blastn.xlsx'
         output_list.append(output_dict)
         redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=4,
                                       notes='resfinder process complete!')
 
-        # Clean up all FASTA/FASTQ files so we don't take up too
+        # Clean up all FASTA/FASTQ files so we don't take up too much space on the NAS
         os.system('rm {workdir}/*fasta'.format(workdir=work_dir))
         try:
             shutil.rmtree(os.path.join(work_dir, 'reports'))

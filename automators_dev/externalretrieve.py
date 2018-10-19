@@ -5,6 +5,7 @@ import ftplib
 import pickle
 import shutil
 import socket
+from wgsassembly import quit_ftp
 from nastools.nastools import retrieve_nas_files
 from automator_settings import FTP_USERNAME, FTP_PASSWORD
 
@@ -118,14 +119,16 @@ def upload_to_ftp(local_file):
             f = open(local_file, 'rb')
             s.storbinary('STOR {}'.format(os.path.split(local_file)[1]), f)
             f.close()
-            s.quit()
+            quit_ftp(s)
+            # s.quit()
             upload_successful = True
             break
         except socket.timeout:
             s = ftplib.FTP('ftp.agr.gc.ca', user=FTP_USERNAME, passwd=FTP_PASSWORD, timeout=30)
             s.cwd('outgoing/cfia-ak')
             uploaded_file_size = s.size(os.path.split(local_file)[1])
-            s.quit()
+            quit_ftp(s)
+            # s.quit()
             if uploaded_file_size == os.path.getsize(local_file):
                 upload_successful = True
                 break

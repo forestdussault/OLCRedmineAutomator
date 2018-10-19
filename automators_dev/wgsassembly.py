@@ -41,6 +41,7 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
             local_folder = sequence_folder
             samplesheet_seqids = get_seqids_from_samplesheet(os.path.join(sequence_folder, 'SampleSheet.csv'))
             lab_id = samplesheet_seqids[0].split('-')[1]
+            sequence_folder = os.path.split(local_folder)[1]
 
         # Otherwise, do all verification checks on the FTP and download files.
         else:
@@ -176,6 +177,18 @@ def check_if_file(file_name, ftp_dir):
         is_file = False
     ftp.quit()
     return is_file
+
+
+def quit_ftp(ftp_object):
+    """
+    Apparently our connection to the FTP is so good that sometimes we can manage to get a timeout when
+    trying to quit the FTP. This function will try to call quit(), will give up and not error out when a timeout happens
+    :param ftp_object: An instantiated FTP object from python's ftplib
+    """
+    try:
+        ftp_object.quit()
+    except TimeoutError:
+        print('Timeout occurred when trying to close connection to the FTP. Ignoring the problem!')
 
 
 def download_dir(ftp_dir, local_dir):
