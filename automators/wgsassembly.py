@@ -9,6 +9,7 @@ import socket
 import fnmatch
 import xml.etree.ElementTree as et
 from externalretrieve import upload_to_ftp
+import ftplib
 from ftplib import FTP
 from automator_settings import FTP_USERNAME, FTP_PASSWORD
 import traceback
@@ -227,7 +228,7 @@ def quit_ftp(ftp_object):
     """
     try:
         ftp_object.quit()
-    except TimeoutError:
+    except ftplib.error_temp:
         print('Timeout occurred when trying to close connection to the FTP. Ignoring the problem!')
 
 
