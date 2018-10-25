@@ -50,8 +50,6 @@ def confindr_redmine(redmine_instance, issue, work_dir, description):
     cmd = '{confindr_py} ' \
           '-i {raw_reads_folder} ' \
           '-o {output_folder} ' \
-          '-n 5 ' \
-          '-t 12 ' \
           '-d {confindr_db}'.format(confindr_py=confindr_py,
                                     raw_reads_folder=raw_reads_folder,
                                     output_folder=output_folder,
