@@ -427,7 +427,7 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
             elif genus == 'Vibrio':
                 if all_vibrio:
                     summary.append('The following strains are confirmed to be ')
-                    summary.append(italic('Vibrio parahaemolyticus'))
+                    summary.append(italic('Vibrio parahaemolyticus '))
                     summary.append('based on GeneSeekr analysis: ')
                 else:
                     summary.append('Some of the following strains could not be confirmed to be ')
@@ -480,6 +480,8 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
                             virulence += 'trh;'
                         if ';' in virulence:
                             virulence = virulence[:-1]
+                        if virulence == '':
+                            virulence = '-'
 
                         table.add_row((lsts_id, r72h, groel, virulence, mlst, rmlst))
                     table.add_hline()
@@ -662,6 +664,7 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
                 create_caption(genesippr_section, 'b', "+ indicates marker presence : "
                                                        "- indicates marker was not detected")
 
+        """
         # AMR TABLE (VTEC and Salmonella only)
         create_amr_profile = False  # only create if an AMR profile exists for one of the provided samples
         amr_samples = []  # keep track of which samples to create rows for
@@ -719,6 +722,7 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
                                     table.add_row((lsts_id, resistance, gene, identity))
                     # Close off table
                     table.add_hline()
+        """
 
         # SEQUENCE TABLE
         with doc.create(pl.Subsection('Sequence Quality Metrics', numbering=False)):
