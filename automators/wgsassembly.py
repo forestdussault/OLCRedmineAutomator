@@ -145,7 +145,10 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
                                           assigned_to_id=296,
                                           subject='WGS Assembly: {}'.format(description[0]),
                                           notes='Upload of result files was not successful. Upload them manually!')
-
+        try:
+            delete_ftp_dir(description[0])
+        except:  # Hakuna matata if things don't get deleted. This is just a nice-to-have
+            pass
 
     except Exception as e:
         redmine_instance.issue.update(resource_id=issue.id,
@@ -202,7 +205,6 @@ def download_ftp_file(ftp_file, local_dir):
 def download_dir(ftp_dir, local_dir):
     all_downloads_successful = True
     ftp = FTP('ftp.agr.gc.ca', user=FTP_USERNAME, passwd=FTP_PASSWORD)
-    ftp.set_debuglevel(level=2)  # Set debug level to maximum verbosity to try to figure out why things are hanging.
     ftp.cwd(os.path.join('incoming/cfia-ak', ftp_dir))
     present_in_folder = ftp.nlst()
     for item in present_in_folder:
@@ -220,6 +222,23 @@ def download_dir(ftp_dir, local_dir):
     return all_downloads_successful
 
 
+def delete_ftp_dir(ftp_dir):
+    """
+    Cleaning up the FTP after things have finished is a good idea. This allows recursive deletion of an FTP dir.
+    :param ftp_dir: Name of directory within incoming/cfia-ak you want deleted.
+    """
+    ftp = FTP('ftp.agr.gc.ca', user=FTP_USERNAME, passwd=FTP_PASSWORD)
+    ftp.cwd(os.path.join('incoming/cfia-ak', ftp_dir))
+    present_in_folder = ftp.nlst()
+    for item in present_in_folder:
+        if check_if_file(item, ftp_dir):
+            ftp.delete(item)
+        else:
+            delete_ftp_dir(os.path.join(ftp_dir, item))
+    ftp.cwd('..')
+    ftp.rmd(os.path.split(ftp_dir)[-1])
+
+
 def quit_ftp(ftp_object):
     """
     Apparently our connection to the FTP is so good that sometimes we can manage to get a timeout when
@@ -230,7 +249,6 @@ def quit_ftp(ftp_object):
         ftp_object.quit()
     except ftplib.error_temp:
         print('Timeout occurred when trying to close connection to the FTP. Ignoring the problem!')
-
 
 
 def check_for_fastq_on_nas(samplesheet_seqids):
