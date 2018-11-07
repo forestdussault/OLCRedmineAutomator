@@ -52,8 +52,7 @@ Log files for STDERR and STDOUT can be found at the following locations:
 If at any time an update is needed on the supervisor scripts,
 register the changes with the following commands:
 ```
-sudo supervisorctl reread
-sudo supervisorctl update
+sudo service supervisor restart
 ```
 
 To account for intermittent connectivity issues with the Redmine instances,
