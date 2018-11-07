@@ -254,6 +254,7 @@ def main():
         # Pull any new automation job requests from issues
         new_jobs = new_automation_jobs(issues)
 
+        logging.info('Found {} jobs'.format(len(new_jobs)))
         if len(new_jobs) > 0:
             # Queue up a SLURM job for each new issue
             for job, job_type in new_jobs.items():
