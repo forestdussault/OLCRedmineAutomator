@@ -108,10 +108,10 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
 
         # Parse genus
         genus = description[2].capitalize()
-        if genus not in ['Escherichia', 'Salmonella', 'Listeria']:
+        if genus not in ['Escherichia', 'Salmonella', 'Listeria', 'Vibrio']:
             redmine_instance.issue.update(resource_id=issue.id, status_id=4,
                                           notes='ERROR: Input genus "{}" does not match any of the acceptable values'
-                                                ' which include: "Escherichia", "Salmonella", "Listeria"'.format(genus))
+                                                ' which include: "Escherichia", "Salmonella", "Listeria", "Vibrio"'.format(genus))
             quit()
 
         # Parse Seq IDs
@@ -212,7 +212,7 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
         }
     ]
 
-    redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=4, assigned_to_id=238,  # Auto assign to Martine.
+    redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=4,
                                   notes='Generated ROGA successfully. Completed PDF report is attached.')
 
 
@@ -220,7 +220,7 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
     """
     Generates PDF
     :param seq_lsts_dict: Dict of SeqIDs;LSTSIDs
-    :param genus: Expected Genus for samples (Salmonella, Listeria, or Escherichia)
+    :param genus: Expected Genus for samples (Salmonella, Listeria, Escherichia, or Vibrio)
     :param lab: ID for lab report is being generated for
     :param source: string input for source that strains were derived from, i.e. 'ground beef'
     :param work_dir: bio_request directory
@@ -260,6 +260,7 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
     all_vt = False
     all_mono = False
     all_enterica = False
+    all_vibrio = False
     some_vt = False
     vt_sample_list = []
 
@@ -268,11 +269,14 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
         validated_ecoli_dict = extract_report_data.validate_ecoli(seq_list, metadata_reports)
         vt_list = []
         uida_list = []
+        hlya_list = []
 
         for key, value in validated_ecoli_dict.items():
             ecoli_uida_present = validated_ecoli_dict[key][0]
             ecoli_vt_present = validated_ecoli_dict[key][1]
+            ecoli_hlya_present = validated_ecoli_dict[key][2]
 
+            hlya_list.append(ecoli_hlya_present)
             uida_list.append(ecoli_uida_present)
             vt_list.append(ecoli_vt_present)
 
@@ -309,6 +313,14 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
             enterica_list.append(value)
         if False not in enterica_list:
             all_enterica = True
+
+    elif genus == 'Vibrio':
+        validated_vibrio_dict = extract_report_data.validate_vibrio(seq_list, metadata_reports)
+        vibrio_list = list()
+        for key, value in validated_vibrio_dict.items():
+            vibrio_list.append(value)
+        if False not in vibrio_list:
+            all_vibrio = True
 
     # MAIN DOCUMENT BODY
     with doc.create(pl.Section('Report of Genomic Analysis: ' + genus, numbering=False)):
@@ -419,19 +431,84 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
                     summary.append('Some of the following strains could not be confirmed to be ')
                     summary.append(italic('Salmonella enterica.'))
 
+            elif genus == 'Vibrio':
+                if all_vibrio:
+                    summary.append('The following strains are confirmed to be ')
+                    summary.append(italic('Vibrio parahaemolyticus '))
+                    summary.append('based on GeneSeekr analysis: ')
+                else:
+                    summary.append('Some of the following strains could not be confirmed to be ')
+                    summary.append(italic('Vibrio parahaemolyticus.'))
+
+        # VIBRIO TABLE
+        if genus == 'Vibrio':
+            genesippr_table_columns = (bold('ID'),
+                                       bold(pl.NoEscape(r'R72H{\footnotesize \textsuperscript {a}}')),
+                                       bold(pl.NoEscape(r'groEL{\footnotesize \textsuperscript {a}}')),
+                                       bold(pl.NoEscape(r'Virulence Profile')),
+                                       bold(pl.NoEscape(r'MLST')),
+                                       bold(pl.NoEscape(r'rMLST')),
+                                       )
+
+            with doc.create(pl.Subsection('GeneSeekr Analysis', numbering=False)) as genesippr_section:
+                with doc.create(pl.Tabular('|c|c|c|c|c|c|')) as table:
+                    # Header
+                    table.add_hline()
+                    table.add_row(genesippr_table_columns)
+
+                    # Rows
+                    for sample_id, df in metadata_reports.items():
+                        table.add_hline()
+
+                        # ID
+                        # lsts_id = df.loc[df['SeqID'] == sample_id]['SampleName'].values[0]
+                        lsts_id = seq_lsts_dict[sample_id]
+
+                        # Genus
+                        genus = df.loc[df['SeqID'] == sample_id]['Genus'].values[0]
+
+                        # MLST/rMLST
+                        mlst = str(df.loc[df['SeqID'] == sample_id]['MLST_Result'].values[0]).replace('-', 'New')
+                        rmlst = str(df.loc[df['SeqID'] == sample_id]['rMLST_Result'].values[0]).replace('-', 'New')
+
+                        # Markers
+                        marker_list = df.loc[df['SeqID'] == sample_id]['GeneSeekr_Profile'].values[0]
+                        (r72h, groel) = '-', '-'
+                        if 'r72h' in marker_list:
+                            r72h = '+'
+                        if 'groEL' in marker_list:
+                            groel = '+'
+
+                        # Virulence
+                        virulence = ''
+                        if 'tdh' in marker_list:
+                            virulence += 'tdh;'
+                        if 'trh' in marker_list:
+                            virulence += 'trh;'
+                        if ';' in virulence:
+                            virulence = virulence[:-1]
+                        if virulence == '':
+                            virulence = '-'
+
+                        table.add_row((lsts_id, r72h, groel, virulence, mlst, rmlst))
+                    table.add_hline()
+                create_caption(genesippr_section, 'a', "+ indicates marker presence : "
+                                                       "- indicates marker was not detected")
+
         # ESCHERICHIA TABLE
         if genus == 'Escherichia':
             genesippr_table_columns = (bold('ID'),
                                        bold(pl.NoEscape(r'uidA{\footnotesize \textsuperscript {a}}')),
                                        bold(pl.NoEscape(r'Serotype')),
                                        bold(pl.NoEscape(r'Verotoxin Profile')),
+                                       bold(pl.NoEscape(r'hlyA{\footnotesize \textsuperscript {a}}')),
                                        bold(pl.NoEscape(r'eae{\footnotesize \textsuperscript {a}}')),
                                        bold(pl.NoEscape(r'MLST')),
                                        bold(pl.NoEscape(r'rMLST')),
                                        )
 
             with doc.create(pl.Subsection('GeneSeekr Analysis', numbering=False)) as genesippr_section:
-                with doc.create(pl.Tabular('|c|c|c|c|c|c|c|')) as table:
+                with doc.create(pl.Tabular('|c|c|c|c|c|c|c|c|')) as table:
                     # Header
                     table.add_hline()
                     table.add_row(genesippr_table_columns)
@@ -462,13 +539,15 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
 
                         marker_list = df.loc[df['SeqID'] == sample_id]['GeneSeekr_Profile'].values[0]
 
-                        (uida, eae) = '-', '-'
+                        (uida, eae, hlya) = '-', '-', '-'
                         if 'uidA' in marker_list:
                             uida = '+'
                         if 'eae' in marker_list:
                             eae = '+'
+                        if 'hlyA' in marker_list:
+                            hlya = '+'
 
-                        table.add_row((lsts_id, uida, fixed_serotype, verotoxin, eae, mlst, rmlst))
+                        table.add_row((lsts_id, uida, fixed_serotype, verotoxin, hlya, eae, mlst, rmlst))
                     table.add_hline()
 
                 create_caption(genesippr_section, 'a', "+ indicates marker presence : "

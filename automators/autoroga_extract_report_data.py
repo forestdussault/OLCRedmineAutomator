@@ -92,11 +92,11 @@ def validate_genus(seq_list, genus):
 
 def validate_ecoli(seq_list, metadata_reports):
     """
-    Checks if the uidA marker and vt markers are present in the combinedMetadata sheets and stores True/False for
-    each SeqID. Values are stored as tuples: (uida_present, verotoxigenic)
+    Checks if the uidA marker, hlyA marker and vt markers are present in the combinedMetadata sheets and stores True/False for
+    each SeqID. Values are stored as tuples: (uida_present, verotoxigenic, hlya_present)
     :param seq_list: List of OLC Seq IDs
     :param metadata_reports: Dictionary retrieved from get_combined_metadata()
-    :return: Dictionary containing Seq IDs as keys and (uidA, vt) presence or absence for values.
+    :return: Dictionary containing Seq IDs as keys and (uidA, vt, hlyA) presence or absence for values.
              Present = True, Absent = False
     """
     ecoli_seq_status = {}
@@ -107,15 +107,46 @@ def validate_ecoli(seq_list, metadata_reports):
         observed_genus = df.loc[df['SeqID'] == seqid]['Genus'].values[0]
         uida_present = False
         verotoxigenic = False
+        hlya_present = False
 
         if observed_genus == 'Escherichia':
             if 'uidA' in df.loc[df['SeqID'] == seqid]['GeneSeekr_Profile'].values[0]:
                 uida_present = True
             if 'vt' in df.loc[df['SeqID'] == seqid]['Vtyper_Profile'].values[0]:
                 verotoxigenic = True
-            ecoli_seq_status[seqid] = (uida_present, verotoxigenic)
+            if 'hlyA' in df.loc[df['SeqID'] == seqid]['GeneSeekr_Profile'].values[0]:
+                hlya_present = True
+            ecoli_seq_status[seqid] = (uida_present, verotoxigenic, hlya_present)
 
     return ecoli_seq_status
+
+
+def validate_vibrio(seq_list, metadata_reports):
+    """
+    Checks combined metadata for presence of r72h and/or groEL in the GeneSeekr_Profile column
+    :param seq_list: List of OLC Seq IDs
+    :param metadata_reports: dictionary retrived from get_combined_metadata()
+    :return: dict with pair of SeqID:boolean where True means GeneSeekr confirms the identity
+    """
+    vibrio_seq_status = dict()
+    for seqid in seq_list:
+        print('Validating {} r72h OR groEL marker detection for Vibrio'.format(seqid))
+        df = metadata_reports[seqid]
+        observed_genus = df.loc[df['SeqID'] == seqid]['Genus'].values[0]
+        r72h_present = False
+        groel_present = False
+
+        if observed_genus == 'Vibrio':
+            if 'groEL' in df.loc[df['SeqID'] == seqid]['GeneSeekr_Profile'].values[0]:
+                groel_present = True
+            if 'r72h' in df.loc[df['SeqID'] == seqid]['GeneSeekr_Profile'].values[0]:
+                r72h_present = True
+
+        if groel_present is True or r72h_present is True:
+            vibrio_seq_status[seqid] = True
+        else:
+            vibrio_seq_status[seqid] = False
+    return vibrio_seq_status
 
 
 def validate_salmonella(seq_list, metadata_reports):
