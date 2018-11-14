@@ -92,11 +92,11 @@ def validate_genus(seq_list, genus):
 
 def validate_ecoli(seq_list, metadata_reports):
     """
-    Checks if the uidA marker and vt markers are present in the combinedMetadata sheets and stores True/False for
-    each SeqID. Values are stored as tuples: (uida_present, verotoxigenic)
+    Checks if the uidA marker, hlyA marker and vt markers are present in the combinedMetadata sheets and stores True/False for
+    each SeqID. Values are stored as tuples: (uida_present, verotoxigenic, hlya_present)
     :param seq_list: List of OLC Seq IDs
     :param metadata_reports: Dictionary retrieved from get_combined_metadata()
-    :return: Dictionary containing Seq IDs as keys and (uidA, vt) presence or absence for values.
+    :return: Dictionary containing Seq IDs as keys and (uidA, vt, hlyA) presence or absence for values.
              Present = True, Absent = False
     """
     ecoli_seq_status = {}
@@ -107,13 +107,16 @@ def validate_ecoli(seq_list, metadata_reports):
         observed_genus = df.loc[df['SeqID'] == seqid]['Genus'].values[0]
         uida_present = False
         verotoxigenic = False
+        hlya_present = False
 
         if observed_genus == 'Escherichia':
             if 'uidA' in df.loc[df['SeqID'] == seqid]['GeneSeekr_Profile'].values[0]:
                 uida_present = True
             if 'vt' in df.loc[df['SeqID'] == seqid]['Vtyper_Profile'].values[0]:
                 verotoxigenic = True
-            ecoli_seq_status[seqid] = (uida_present, verotoxigenic)
+            if 'hlyA' in df.loc[df['SeqID'] == seqid]['GeneSeekr_Profile'].values[0]:
+                hlya_present = True
+            ecoli_seq_status[seqid] = (uida_present, verotoxigenic, hlya_present)
 
     return ecoli_seq_status
 

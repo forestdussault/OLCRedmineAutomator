@@ -265,11 +265,14 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
         validated_ecoli_dict = extract_report_data.validate_ecoli(seq_list, metadata_reports)
         vt_list = []
         uida_list = []
+        hlya_list = []
 
         for key, value in validated_ecoli_dict.items():
             ecoli_uida_present = validated_ecoli_dict[key][0]
             ecoli_vt_present = validated_ecoli_dict[key][1]
+            ecoli_hlya_present = validated_ecoli_dict[key][2]
 
+            hlya_list.append(ecoli_hlya_present)
             uida_list.append(ecoli_uida_present)
             vt_list.append(ecoli_vt_present)
 
@@ -494,13 +497,14 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
                                        bold(pl.NoEscape(r'uidA{\footnotesize \textsuperscript {a}}')),
                                        bold(pl.NoEscape(r'Serotype')),
                                        bold(pl.NoEscape(r'Verotoxin Profile')),
+                                       bold(pl.NoEscape(r'hlyA{\footnotesize \textsuperscript {a}}')),
                                        bold(pl.NoEscape(r'eae{\footnotesize \textsuperscript {a}}')),
                                        bold(pl.NoEscape(r'MLST')),
                                        bold(pl.NoEscape(r'rMLST')),
                                        )
 
             with doc.create(pl.Subsection('GeneSeekr Analysis', numbering=False)) as genesippr_section:
-                with doc.create(pl.Tabular('|c|c|c|c|c|c|c|')) as table:
+                with doc.create(pl.Tabular('|c|c|c|c|c|c|c|c|')) as table:
                     # Header
                     table.add_hline()
                     table.add_row(genesippr_table_columns)
@@ -531,13 +535,15 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
 
                         marker_list = df.loc[df['SeqID'] == sample_id]['GeneSeekr_Profile'].values[0]
 
-                        (uida, eae) = '-', '-'
+                        (uida, eae, hlya) = '-', '-', '-'
                         if 'uidA' in marker_list:
                             uida = '+'
                         if 'eae' in marker_list:
                             eae = '+'
+                        if 'hlyA' in marker_list:
+                            hlya = '+'
 
-                        table.add_row((lsts_id, uida, fixed_serotype, verotoxin, eae, mlst, rmlst))
+                        table.add_row((lsts_id, uida, fixed_serotype, verotoxin, hlya, eae, mlst, rmlst))
                     table.add_hline()
 
                 create_caption(genesippr_section, 'a', "+ indicates marker presence : "
