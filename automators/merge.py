@@ -51,15 +51,16 @@ def merge_redmine(redmine_instance, issue, work_dir, description):
                            filetype='fastq',
                            copyflag=False)
 
+        merge_files(mergefile=os.path.join(work_dir, 'Merge.xlsx'), work_dir=work_dir)
         # Run the merger script.
-        cmd = 'python /mnt/nas/Redmine/OLCRedmineAutomator/automators/merger.py -f {} -d ";" {}'.format(
-            os.path.join(work_dir, 'Merge.xlsx'), work_dir)
-        os.system(cmd)
+        # cmd = 'python /mnt/nas/Redmine/OLCRedmineAutomator/automators/merger.py -f {} -d ";" {}'.format(
+        #     os.path.join(work_dir, 'Merge.xlsx'), work_dir)
+        # os.system(cmd)
 
         issue.watcher.add(226)  # Add Paul so he can put results into DB.
         # Make a folder to put all the merged FASTQs in biorequest folder. and put the merged FASTQs there.
         os.makedirs(os.path.join(work_dir, 'merged_' + str(issue.id)))
-        cmd = 'mv {merged_files} {merged_folder}'.format(merged_files=os.path.join(work_dir, '*MER*/*.fastq.gz'),
+        cmd = 'mv {merged_files} {merged_folder}'.format(merged_files=os.path.join(work_dir, '*MER*.fastq.gz'),
                                                          merged_folder=os.path.join(work_dir, 'merged_' + str(issue.id)))
         os.system(cmd)
 
@@ -115,6 +116,22 @@ def convert_excel_file(infile, outfile):
     writer = ExcelWriter(outfile)
     df.to_excel(writer, 'Sheet1', index=False)
     writer.save()
+
+
+def merge_files(mergefile, work_dir):
+    df = pd.read_excel(mergefile)
+    for i in range(len(df['Name'])):
+        seqids = df['Merge'][i].split(';')
+        merge_name = df['Name'][i]
+        merge_forward_reads = os.path.join(work_dir, merge_name + '_S1_L001_R1_001.fastq.gz')
+        merge_reverse_reads = os.path.join(work_dir, merge_name + '_S1_L001_R2_001.fastq.gz')
+        for seqid in seqids:
+            forward = glob.glob(os.path.join(work_dir, seqid + '*_R1*.fastq.gz'))[0]
+            reverse = glob.glob(os.path.join(work_dir, seqid + '*_R2*.fastq.gz'))[0]
+            cmd = 'cat {forward} >> {merge_forward_reads}'.format(forward=forward, merge_forward_reads=merge_forward_reads)
+            os.system(cmd)
+            cmd = 'cat {reverse} >> {merge_reverse_reads}'.format(reverse=reverse, merge_reverse_reads=merge_reverse_reads)
+            os.system(cmd)
 
 
 def generate_seqid_list(mergefile):
