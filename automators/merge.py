@@ -92,7 +92,7 @@ def merge_redmine(redmine_instance, issue, work_dir, description):
                                                           merge_WGSspades=os.path.join('/mnt/nas2/processed_sequence_data/merged_assemblies',
                                                           'merged_' + str(issue.id) + '_Assembled'))
         os.system(cmd)
-        shutil.make_archive(os.path.join(work_dir, 'reports'), 'zip', os.path.join('/mnt/nas/processed_sequence_data/merged_assemblies', 'merged_' + str(issue.id) + '_Assembled', 'reports'))
+        shutil.make_archive(os.path.join(work_dir, 'reports'), 'zip', os.path.join('/mnt/nas2/processed_sequence_data/merged_assemblies', 'merged_' + str(issue.id) + '_Assembled', 'reports'))
         output_list = list()
         output_dict = dict()
         output_dict['path'] = os.path.join(work_dir, 'reports.zip')
