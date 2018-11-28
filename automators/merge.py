@@ -6,6 +6,7 @@ import shutil
 import pandas as pd
 from pandas import ExcelWriter
 from nastools.nastools import retrieve_nas_files
+from automator_settings import COWBAT_IMAGE, COWBAT_DATABASES
 
 
 @click.command()
@@ -82,9 +83,11 @@ def merge_redmine(redmine_instance, issue, work_dir, description):
         # With files copied over to the HDFS, start the assembly process (Now using new pipeline!)
         cmd = 'docker rm -f cowbat'
         os.system(cmd)
-        cmd = 'docker run -i -u $(id -u) -v /mnt/nas2:/mnt/nas2 -v /hdfs:/hdfs --name cowbat --rm cowbat:0.4.1 /bin/bash -c ' \
-              '"source activate cowbat && assembly_pipeline.py -s {hdfs_folder} -r /mnt/nas2/databases/assemblydatabases' \
-              '/0.3.4"'.format(hdfs_folder=os.path.join('/hdfs', 'merged_' + str(issue.id)))
+        cmd = 'docker run -i -u $(id -u) -v /mnt/nas2:/mnt/nas2 -v /hdfs:/hdfs --name cowbat --rm {cowbat_image} /bin/bash -c ' \
+              '"source activate cowbat && assembly_pipeline.py -s {hdfs_folder} ' \
+              '-r {cowbat_databases}'.format(hdfs_folder=os.path.join('/hdfs', 'merged_' + str(issue.id)),
+                                             cowbat_image=COWBAT_IMAGE,
+                                             cowbat_databases=COWBAT_DATABASES)
         os.system(cmd)
 
         # Move results to merge_WGSspades, and upload the results folder to redmine.
