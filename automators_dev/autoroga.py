@@ -670,7 +670,6 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
                 create_caption(genesippr_section, 'b', "+ indicates marker presence : "
                                                        "- indicates marker was not detected")
 
-        """
         # AMR TABLE (VTEC and Salmonella only)
         create_amr_profile = False  # only create if an AMR profile exists for one of the provided samples
         amr_samples = []  # keep track of which samples to create rows for
@@ -687,9 +686,12 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
                     if sample_id in vt_sample_list:  # vt_sample_list contains all vt+ sample IDs
                         amr_samples.append(sample_id)
                         create_amr_profile = True
+                elif genus == 'Vibrio':
+                    amr_samples.append(sample_id)
+                    create_amr_profile = True
 
         # Create table
-        if (genus == 'Salmonella' or some_vt is True) and create_amr_profile is True:
+        if (genus == 'Salmonella' or some_vt is True or genus == 'Vibrio') and create_amr_profile is True:
             with doc.create(pl.Subsection('Antimicrobial Resistance Profiling', numbering=False)):
                 with doc.create(pl.Tabular('|c|c|c|c|')) as table:
                     amr_columns = (bold('ID'),
@@ -700,7 +702,12 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
                     # Header
                     table.add_hline()
                     table.add_row(amr_columns)
-
+                    # Keep track of what previous id and resistance were so we know how far to draw lines across
+                    # table. Initialize to some gibberish.
+                    previous_id = 'asdasdfasdfs'
+                    previous_resistance = 'akjsdhfasdf'
+                    # For the AMR table, don't re-write sample id if same sample has multiple resistances
+                    # Also, don't re-write resistances if same resistance has multiple genes.
                     for sample_id, df in metadata_reports.items():
                         if sample_id in amr_samples:
                             # Grab AMR profile
@@ -710,25 +717,39 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
                             if parsed_profile is not None:
                                 # Rows
                                 for value in parsed_profile:
-                                    table.add_hline()
                                     # ID
-                                    # lsts_id = df.loc[df['SeqID'] == sample_id]['SampleName'].values[0]
+                                    resistance = value.resistance
+                                    res_to_write = resistance
                                     lsts_id = seq_lsts_dict[sample_id]
-
-                                    # Resistance
-                                    resistance = value['resistance']
+                                    # If sample we're on is different from previous sample, line goes all the
+                                    # way across the table.
+                                    if lsts_id != previous_id:
+                                        table.add_hline()
+                                        id_to_write = lsts_id
+                                    # If sample is same and resistance is same, only want lines for gene and percent
+                                    # identity columns. Don't write out id or resistance again.
+                                    elif resistance == previous_resistance:
+                                        table.add_hline(start=3, end=4)
+                                        id_to_write = ''
+                                        res_to_write = ''
+                                    # Finally, if resistance is different, but id is same, need line across for
+                                    # resistance, gene, and percent id. Write out everything but id
+                                    else:
+                                        table.add_hline(start=2, end=4)
+                                        id_to_write = ''
+                                    previous_id = lsts_id
+                                    previous_resistance = resistance
 
                                     # Gene
-                                    gene = value['gene']
+                                    gene = value.gene
 
                                     # Identity
-                                    identity = value['identity']
+                                    identity = value.percent_id
 
                                     # Add row
-                                    table.add_row((lsts_id, resistance, gene, identity))
+                                    table.add_row((id_to_write, res_to_write, gene, identity))
                     # Close off table
                     table.add_hline()
-        """
 
         # SEQUENCE TABLE
         with doc.create(pl.Subsection('Sequence Quality Metrics', numbering=False)):
