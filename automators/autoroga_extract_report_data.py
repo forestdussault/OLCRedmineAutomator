@@ -235,44 +235,39 @@ def generate_validated_list(seq_list, genus):
     return tuple(validated_list)
 
 
+class ResistanceInfo:
+    def __init__(self, resistance, gene, percent_id):
+        self.resistance = resistance
+        self.gene = gene
+        self.percent_id = percent_id
+
+
 def parse_amr_profile(value):
     """
     Takes the value from the AMR_Profile column in combinedMetadata.csv and retrieves resistance, gene, and % identity
     :param value: AMR_Profile column value from combinedMetadata.csv
-    :return: tuple for each resistance containing dicts with resistance, gene, % identity as keys
+    :return: list of ResistanceInfo objects
     """
     # Initial check to see if a resistance profile for the sample exists
     if value == '-' or value == 'ND':
         return None
 
-    # Split on ; to retrieve each resistance detected for a sample
-    resistances = value.split(';')
+    # Do some real funky parsing in order to get AMR values out.
+    antibiotics = value.split('));')[:-1]  # Last element is always blank, so don't actually include it.
 
-    amr_profile = []
-    for res in resistances:
+    amr_profile = list()
+    for antibiotic in antibiotics:
+        antibiotic_name = antibiotic.split('(')[0]
+        genes = '('.join(antibiotic.split('(')[1:]).split(';')
+        for gene in sorted(genes):
+            gene_name = gene.split(' ')[0]
+            percent_identity = gene.split(' ')[1].replace('(', '').replace(')', '')
+            resistance_info = ResistanceInfo(resistance=antibiotic_name,
+                                             gene=gene_name,
+                                             percent_id=percent_identity)
+            amr_profile.append(resistance_info)
 
-        profile = dict()
-
-        # parse gene: should always be the first element when splitting on spaces
-        gene = res.split(' ')[0]
-
-        # parse out % identity with some regex/splitting
-        isolate_term = res.split(' ')[1]
-        reg_pattern = re.compile(r'^\D*(\d+(?:\.\d+)?)\D*$')
-        identity = float(re.findall(reg_pattern, isolate_term)[0])
-
-        # grab resistance: should be everything after the first two space delimiters
-        resistance = res.split(' ', 2)[2].replace(' resistance', '')
-
-        # populate dict
-        profile['gene'] = gene
-        profile['identity'] = identity
-        profile['resistance'] = resistance
-
-        # append to master list
-        amr_profile.append(profile)
-
-    return tuple(amr_profile)
+    return amr_profile
 
 
 def parse_geneseekr_profile(value):
