@@ -3,6 +3,7 @@ import glob
 import click
 import pickle
 import shutil
+from automator_settings import COWBAT_DATABASES
 from nastools.nastools import retrieve_nas_files
 
 @click.command()
@@ -35,9 +36,9 @@ def resfinder_redmine(redmine_instance, issue, work_dir, description):
                                                 ' the OLC NAS: {}'.format(missing_fastas))
 
         # Run ResFindr
-        cmd = 'GeneSeekr blastn -s {seqfolder} -t {targetfolder} -r {reportdir} -R'\
+        cmd = 'GeneSeekr blastn -s {seqfolder} -t {targetfolder} -r {reportdir} -A'\
             .format(seqfolder=work_dir,
-                    targetfolder='/mnt/nas2/databases/assemblydatabases/0.3.4/resfinder',
+                    targetfolder=os.path.join(COWBAT_DATABASES, 'resfinder'),
                     reportdir=os.path.join(work_dir, 'reports'))
         print(cmd)
         os.system(cmd)

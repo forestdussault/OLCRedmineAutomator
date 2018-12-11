@@ -36,7 +36,7 @@ def resfinder_redmine(redmine_instance, issue, work_dir, description):
 
         db_path = '/mnt/nas2/databases/assemblydatabases/0.3.4/'
         # Run ResFindr
-        cmd = 'GeneSeekr blastn -s {seqfolder} -t {targetfolder} -r {reportdir} -R'\
+        cmd = 'GeneSeekr blastn -s {seqfolder} -t {targetfolder} -r {reportdir} -A'\
             .format(seqfolder=work_dir,
                     targetfolder=os.path.join(db_path, 'resfinder'),
                     reportdir=os.path.join(work_dir, 'reports'))
