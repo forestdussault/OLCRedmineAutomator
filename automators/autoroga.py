@@ -212,7 +212,7 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
         }
     ]
 
-    redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=4, assigned_to_id=238,  # Assign to Martine.
+    redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=4, assigned_to_id=448,  # Assign to Martine.
                                   notes='Generated ROGA successfully. Completed PDF report is attached.')
 
 

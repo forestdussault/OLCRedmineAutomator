@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from glob import glob
+import glob
 from accessoryFunctions.accessoryFunctions import *
 import shutil
 
