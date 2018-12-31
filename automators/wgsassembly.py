@@ -45,8 +45,8 @@ def wgsassembly_redmine(redmine_instance, issue, work_dir, description):
             if sequence_folder.endswith('/'):
                 sequence_folder = sequence_folder[:-1]
             local_folder = sequence_folder
-            samplesheet_seqids = get_seqids_from_samplesheet(os.path.join(sequence_folder, 'SampleSheet.csv'))
-            lab_id = samplesheet_seqids[0].split('-')[1]
+            # samplesheet_seqids = get_seqids_from_samplesheet(os.path.join(sequence_folder, 'SampleSheet.csv'))
+            # lab_id = samplesheet_seqids[0].split('-')[1]
             sequence_folder = os.path.split(local_folder)[1]
 
         # Otherwise, do all verification checks on the FTP and download files.
