@@ -3,7 +3,7 @@ import glob
 import click
 import pickle
 from biotools import mash
-
+from nastools.nastools import retrieve_nas_files
 
 @click.command()
 @click.option('--redmine_instance', help='Path to pickled Redmine API instance')
@@ -31,30 +31,22 @@ def closerelatives_redmine(redmine_instance, issue, work_dir, description):
         # Second line of description should be the SEQID of what you want to find a close reference for.
         seqid = description[1]
 
-        # Try to extract FASTQ files for the specified SEQID.
-        with open(os.path.join(work_dir, 'seqid.txt'), 'w') as f:
-            f.write(seqid)
-
-        cmd = 'python2 /mnt/nas/MiSeq_Backup/file_linker.py ' \
-              '{seqidlist} ' \
-              '{workdir}'.format(seqidlist=os.path.join(work_dir, 'seqid.txt'), workdir=work_dir)
-        os.system(cmd)
-        if len(glob.glob(os.path.join(work_dir, '*.fastq.gz'))) != 2:
+        # Try to extract FASTA files for the specified SEQID.
+        retrieve_nas_files(seqids=[seqid],
+                           outdir=os.path.join(work_dir, 'fasta'),
+                           filetype='fasta',
+                           copyflag=False)
+        if len(glob.glob(os.path.join(work_dir, 'fasta', '*.fasta'))) != 1:
             redmine_instance.issue.update(resource_id=issue.id,
-                                          notes='Error! Could not find FASTQ files for the specified SEQID. The SEQID'
+                                          notes='Error! Could not find FASTA file for the specified SEQID. The SEQID'
                                                 ' that you specified was: {}'.format(seqid),
                                           status_id=4)
             return
 
-        # Let the user know that it's MASH time.
-        redmine_instance.issue.update(resource_id=issue.id,
-                                      notes='Beginning MASHING!',
-                                      status_id=2)
-
         # Run mash dist with the FASTQ file specified against the sketch of all our stuff.
-        query_fastq = glob.glob(os.path.join(work_dir, '*R1*'))[0]
-        mash.dist(query_fastq, '/mnt/nas/bio_requests/10937/all_sequences.msh',
-                  m='3', threads=48, output_file=os.path.join(work_dir, 'distances.tab'))
+        query_fasta = glob.glob(os.path.join(work_dir, 'fasta', '*.fasta'))[0]
+        mash.dist(query_fasta, '/mnt/nas2/redmine/bio_requests/14674/all_sequences.msh',
+                  threads=8, output_file=os.path.join(work_dir, 'distances.tab'))
         mash_results = mash.read_mash_output(os.path.join(work_dir, 'distances.tab'))
         result_dict = dict()
         # Put all the results into a dictionary, where the key is the sequence file and the value is mash distance
@@ -69,16 +61,30 @@ def closerelatives_redmine(redmine_instance, issue, work_dir, description):
         # Prepare a string that lists the top hit SEQIDs to be posted to redmine.
         upload_string = ''
         for i in range(num_close_relatives):
-            upload_string = upload_string + sorted_distance_results[i] + '\n'
+            upload_string = upload_string + sorted_distance_results[i].replace('.fasta', '') + ' (' + str(result_dict[sorted_distance_results[i]]) + ')\n'
 
-        # Post the list of closely related SEQIDs to redmine.
+        # Also make a CSV file of all results, in case someone wants to take a closer look.
+        with open(os.path.join(work_dir, 'close_relatives_results.csv'), 'w') as f:
+            f.write('Strain,MashDistance\n')
+            for seqid in sorted_distance_results:
+                f.write('{},{}\n'.format(seqid.replace('.fasta', ''), result_dict[seqid]))
+
+        output_list = [
+            {
+                'path': os.path.join(work_dir, 'close_relatives_results.csv'),
+                'filename': 'close_relatives_results.csv'
+            }
+        ]
+        # Post the list of closely related SEQIDs to redmine, as well as the CSV result file.
         redmine_instance.issue.update(resource_id=issue.id,
                                       notes='Process complete! Here is the list of the {num_relatives} closest strains '
-                                            'to {query_strain}:'
+                                            'to {query_strain} (mash distance between query and result in brackets):'
                                             '\n{upload_string}'.format(num_relatives=str(num_close_relatives),
                                                                        query_strain=seqid,
                                                                        upload_string=upload_string),
-                                      status_id=4)
+                                      status_id=4,
+                                      uploads=output_list)
+
     except Exception as e:
         redmine_instance.issue.update(resource_id=issue.id,
                                       notes='Something went wrong! Send this error traceback to your friendly '
