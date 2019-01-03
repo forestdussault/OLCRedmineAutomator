@@ -66,8 +66,8 @@ def closerelatives_redmine(redmine_instance, issue, work_dir, description):
         # Also make a CSV file of all results, in case someone wants to take a closer look.
         with open(os.path.join(work_dir, 'close_relatives_results.csv'), 'w') as f:
             f.write('Strain,MashDistance\n')
-            for seqid in sorted_distance_results:
-                f.write('{},{}\n'.format(seqid.replace('.fasta', ''), result_dict[seqid]))
+            for seq in sorted_distance_results:
+                f.write('{},{}\n'.format(seq.replace('.fasta', ''), result_dict[seq]))
 
         output_list = [
             {
