@@ -2,35 +2,6 @@
 
 User guide available at: https://olc-bioinformatics.github.io/redmine-docs/
 
-# OLCRedmineAutomator
-
-The OLCRedmineAutomator allows for easy access to a number of
-bioinformatics tools for use through Redmine.
-
-The majority of our tools work by parsing a list of Sample IDs provided
-in the description field of a Redmine issue submitted through the
-[OLC Redmine portal](http://redmine.biodiversity.agr.gc.ca/projects/cfia/).
-The requested tool to run the analysis must be specified in the subject line.
-
-Below are a list of acceptable keywords that the OLCRedmineAutomator
-will detect in an issue subject line. The amount of resources allocated
-to the OLC Slurm cluster for each respective job type is also displayed.
-
-| Keyword          | CPUs |  RAM (GB)|
-| ---------------  |:----:|:--------:|
-| Strainmash       | 8    |  12      |
-| WGS Assembly     | 12   |  192     |
-| AutoCLARK        | 48   |  192     |
-| SNVPhyl          | 48   |  192     |
-| Diversitree      | 56   |  192     |
-| External Retrieve| 1    |  6       |
-| PlasmidExtractor | 48   |  192     |
-| Merge            | 48   |  192     |
-| CloseRelatives   | 48   |  192     |
-| AutoROGA         | 1    |  1       |
-| QIIMEgraph       | 1    |  1       |
-| Metadata Retrieve| 1    |  1       |
-
 
 ### Internal Notes
 The OLCRedmineAutomator is constantly running on the OLC head node (ubuntu@192.168.1.5).
@@ -65,9 +36,9 @@ sudo crontab -e
 #### Manual operation
 1. Log into the head node (ubuntu@192.168.1.5)
 2. Activate the virtual environment
-    - ```source /mnt/nas/Redmine/.virtualenvs/OLCRedmineAutomator/bin/activate```
+    - ```source /mnt/nas2/redmine/applications/.virtualenvs/OLCRedmineAutomator/bin/activate```
 3. Call automation script
-    - ```python /mnt/nas/Redmine/OLCRedmineAutomator/api.py 2> /dev/null```
+    - ```python /mnt/nas2/redmine/applications/OLCRedmineAutomator/api.py 2> /dev/null```
 4. Enjoy Redmine automation
 
 
