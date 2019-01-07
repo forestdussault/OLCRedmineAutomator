@@ -151,7 +151,7 @@ def create_template(issue, cpu_count, memory, work_dir, cmd):
                "#SBATCH --job-name={jobid}\n" \
                "#SBATCH -o {work_dir}/job_%j.out\n" \
                "#SBATCH -e {work_dir}/job_%j.err\n" \
-               "source /mnt/nas/Redmine/.virtualenvs/OLCRedmineAutomator/bin/activate\n" \
+               "source /mnt/nas2/redmine/applications/.virtualenvs/OLCRedmineAutomator/bin/activate\n" \
                "{cmd}".format(cpu_count=cpu_count,
                               memory=memory,
                               jobid=issue.id,

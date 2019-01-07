@@ -1,8 +1,12 @@
+#!/usr/bin/env python
+
 import os
 import glob
 import click
 import pickle
+import subprocess
 from biotools import mash
+from diversitree import diversitree
 from nastools.nastools import retrieve_nas_files
 
 @click.command()
@@ -35,6 +39,18 @@ def diversitree_redmine(redmine_instance, issue, work_dir, description):
             item = description[i].upper()
             seqids.append(item)
 
+        if 'treeprogram' in seqids[-1]:
+            treemaker = seqids[-1].split('=')[1].lower()
+            seqids.pop()
+            if treemaker not in ['parsnp', 'mashtree']:
+                redmine_instance.issue.update(resource_id=issue.id,
+                                              notes='Error! Available tree creation programs are mashtree and parsnp. '
+                                                    'Your choice was {}'.format(treemaker),
+                                              status_id=4)
+                return
+        else:
+            treemaker = 'parsnp'
+
         # Drop FASTA files into workdir
         retrieve_nas_files(seqids=seqids,
                            outdir=os.path.join(work_dir, 'fastas'),
@@ -62,12 +78,23 @@ def diversitree_redmine(redmine_instance, issue, work_dir, description):
             os.remove(os.path.join(work_dir, 'fastas', 'sketch.msh'))
         except OSError:
             pass
-
-        cmd = 'python /mnt/nas/Redmine/OLCRedmineAutomator/automators/sampler.py -i {work_dir} ' \
-              '-d {desired_tips} -o {output}'.format(work_dir=os.path.join(work_dir, 'fastas'),
-                                                     desired_tips=desired_num_strains,
-                                                     output=os.path.join(work_dir, 'output'))
-        os.system(cmd)
+        if treemaker == 'parsnp':
+            cmd = 'parsnp -r ! -d {input} -o {output} -p {threads}'.format(input=os.path.join(work_dir, 'fastas'),
+                                                                           output=os.path.join(work_dir, 'output'),
+                                                                           threads=24)
+        elif treemaker == 'mashtree':
+            if not os.path.isdir(os.path.join(work_dir, 'output')):
+                os.makedirs(os.path.join(work_dir, 'output'))
+            cmd = 'mashtree --numcpus 24 -o {output_newick} {input_fastas}'.format(output_newick=os.path.join(work_dir, 'output', 'parsnp.tree'),
+                                                                                   input_fastas=os.path.join(work_dir, 'fastas', '*.fasta'))
+        subprocess.call(cmd, shell=True)
+        # Now use diversitree to pick the strains we actually want.
+        dt = diversitree.DiversiTree(tree_file=os.path.join(work_dir, 'output', 'parsnp.tree'))
+        linkage = dt.create_linkage()
+        clusters = dt.find_clusters(linkage=linkage, desired_clusters=desired_num_strains)
+        with open(os.path.join(work_dir, 'output', 'strains.txt')) as f:
+            for cluster in clusters:
+                f.write('{}\n'.format(dt.choose_best_representative(cluster)))
         output_list = list()
         output_dict = dict()
         output_dict['path'] = os.path.join(work_dir, 'output', 'strains.txt')
