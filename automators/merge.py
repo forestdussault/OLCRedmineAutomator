@@ -85,7 +85,7 @@ def merge_redmine(redmine_instance, issue, work_dir, description):
         os.system(cmd)
         cmd = 'docker run -i -u $(id -u) -v /mnt/nas2:/mnt/nas2 -v /hdfs:/hdfs --name cowbat --rm {cowbat_image} /bin/bash -c ' \
               '"source activate cowbat && assembly_pipeline.py -s {hdfs_folder} ' \
-              '-r {cowbat_databases}'.format(hdfs_folder=os.path.join('/hdfs', 'merged_' + str(issue.id)),
+              '-r {cowbat_databases}"'.format(hdfs_folder=os.path.join('/hdfs', 'merged_' + str(issue.id)),
                                              cowbat_image=COWBAT_IMAGE,
                                              cowbat_databases=COWBAT_DATABASES)
         os.system(cmd)
