@@ -1,5 +1,6 @@
 import sqlalchemy as sa
 import datetime
+import time
 
 from automator_settings import POSTGRES_PASSWORD, POSTGRES_USERNAME
 
@@ -9,11 +10,20 @@ def connect(user, password, db, host='192.168.1.5', port=5432):
     url = 'postgresql://{}:{}@{}:{}/{}'
     url = url.format(user, password, host, port, db)
 
-    # The return value of create_engine() is the connection object
-    con = sa.create_engine(url, client_encoding='utf8')
+    # To prevent race conditions, the POSTGRES_USERNAME should be set up with a connection limit of 1.
+    # Then, if other users are currently accessing ROGA database, just wait.
+    connection_created = False
 
-    # Bind the connection to MetaData()
-    meta = sa.MetaData(bind=con, reflect=True)
+    while connection_created is False:
+        try:
+            # The return value of create_engine() is the connection object
+            con = sa.create_engine(url, client_encoding='utf8')
+
+            # Bind the connection to MetaData()
+            meta = sa.MetaData(bind=con, reflect=True)
+            connection_created = True
+        except sa.exc.OperationalError:  # This is the error you get if too many users try to connect.
+            time.sleep(10)
 
     return con, meta
 
@@ -55,7 +65,7 @@ def update_db(date, year, genus, lab, source, amendment_flag, amended_id):
         next_val = 1
 
     # Create ROGA ID
-    roga_id = year + '-ROGA-' + '{:04d}'.format(next_val)
+    roga_id = year + '-ROGA-DEV-' + '{:04d}'.format(next_val)
 
     # Insert new row into autoroga_project_table table
     ins = autoroga_project_table.insert().values(roga_id=roga_id, genus=genus, date=date, lab=lab, source=source,
