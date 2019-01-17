@@ -45,12 +45,10 @@ lab_info = {
     'STH': ('3400 Casavant Boulevard W., St. Hyacinthe, QC, J2S 8E3', '450-768-6800')
 }
 
-# TODO: User level security to ensure only permitted users can submit AutoROGA requests
-permitted_users = [
-    '',
-]
+# User level security to ensure only permitted users can submit AutoROGA requests
+# Permitted users - Andrew, Adam, Julie, Cathy, Paul, Martine.
+permitted_users = [296, 106, 429, 225, 226, 448]
 
-# TODO: GDCS + GenomeQAML combined metric. Everything must pass in order to be listed as 'PASS'
 @click.command()
 @click.option('--redmine_instance', help='Path to pickled Redmine API instance')
 @click.option('--issue', help='Path to pickled Redmine issue')
@@ -64,6 +62,12 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
     redmine_instance = pickle.load(open(redmine_instance, 'rb'))
     issue = pickle.load(open(issue, 'rb'))
     description = pickle.load(open(description, 'rb'))
+
+    if issue.author.id not in permitted_users:
+        redmine_instance.issue.update(resource_id=issue.id, status_id=4,
+                                      notes='ERROR: Only authorized users are allowed to submit autoROGA requests.'
+                                            'If you think you should be authorized, please contact andrew.low@canada.ca')
+        quit()
 
     # Setup
     amended_report_id = None
