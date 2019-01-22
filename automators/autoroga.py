@@ -242,6 +242,9 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
     # DATE SETUP
     date = datetime.today().strftime('%Y-%m-%d')
     year = datetime.today().strftime('%Y')
+    # Follow our fiscal year - anything before April is actually previous year.
+    if datetime.now().month < 4:
+        year = year - 1
 
     # PAGE SETUP
     geometry_options = {"tmargin": "2cm",
