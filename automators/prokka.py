@@ -77,7 +77,7 @@ def prokka_redmine(redmine_instance, issue, work_dir, description):
         # Prepare upload
         if upload_successful:
             redmine_instance.issue.update(resource_id=issue.id, status_id=4,
-                                          notes='Mob-suite process complete!\n\n'
+                                          notes='Prokka process complete!\n\n'
                                                 'Results are available at the following FTP address:\n'
                                                 'ftp://ftp.agr.gc.ca/outgoing/cfia-ak/{}'.format(os.path.split(zip_filepath)[1]))
         else:
