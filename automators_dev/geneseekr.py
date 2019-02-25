@@ -32,7 +32,8 @@ def geneseekr_redmine(redmine_instance, issue, work_dir, description):
         'cutoff': 70,
         'evalue': '1E-5',
         'unique': False,
-        'organism': str()
+        'organism': str(),
+        'fasta': False,
     }
     # Dictionary of analysis types to argument flags to pass to the script
     argument_flags = {
@@ -60,7 +61,7 @@ def geneseekr_redmine(redmine_instance, issue, work_dir, description):
         'virulence': os.path.join(dbpath, 'virulence'),
     }
     try:
-        # Parse description to figure out what SEQIDs we need to run on.
+    # Parse description to figure out what SEQIDs we need to run on.
         seqids = list()
         for item in description:
             item = item.upper().rstrip()
@@ -83,6 +84,9 @@ def geneseekr_redmine(redmine_instance, issue, work_dir, description):
                 argument_dict['organism'] = item.split('=')[1].capitalize()
             if 'ANALYSIS' in item:
                 argument_dict['analysis'] = item.split('=')[1].lower()
+                continue
+            if 'FASTA' in item:
+                argument_dict['fasta'] = True
                 continue
             # Otherwise the item should be a SEQID
             seqids.append(item)
@@ -182,6 +186,7 @@ def geneseekr_redmine(redmine_instance, issue, work_dir, description):
         # Append the align and/or the unique flags are required
         seekr_cmd += ' -a' if argument_dict['align'] else ''
         seekr_cmd += ' -u' if argument_dict['unique'] else ''
+        seekr_cmd += ' -f' if argument_dict['fasta'] else ''
         # Update the issue with the GeneSeekr command
         redmine_instance.issue.update(resource_id=issue.id,
                                       notes='GeneSeekr command:\n {cmd}'.format(cmd=seekr_cmd))
