@@ -6,14 +6,7 @@ import click
 import pickle
 import subprocess
 from biotools import mash
-# As I probably should have known, having a script named the same as a module I'm importing makes everything
-# fail miserably. Use some modifications to sys.path in order to hack through my idiocy.
-# https://stackoverflow.com/questions/20893775/how-to-import-standard-library-module-instead-of-local-directory
-import sys
-original_path = sys.path
-sys.path = original_path[1:]
-from diversitree import diversitree
-sys.path = original_path
+from strainchoosr import strainchoosr
 
 from nastools.nastools import retrieve_nas_files
 
@@ -99,20 +92,21 @@ def diversitree_redmine(redmine_instance, issue, work_dir, description):
                                                                                    input_fastas=os.path.join(work_dir, 'fastas', '*.fasta'))
         subprocess.call(cmd, shell=True, env={'PERL5LIB': '$PERL5LIB:/home/ubuntu/lib/perl5'})
         # Now use diversitree to pick the strains we actually want.
-        dt = diversitree.DiversiTree(tree_file=os.path.join(work_dir, 'output', 'parsnp.tree'))
-        linkage = dt.create_linkage()
-        clusters = dt.find_clusters(linkage=linkage, desired_clusters=desired_num_strains)
-        with open(os.path.join(work_dir, 'output', 'strains.txt'), 'w') as f:
-            for cluster in clusters:
-                f.write('{}\n'.format(dt.choose_best_representative(cluster)))
+        # IMPORTANT NOTE TO ANYONE MAINTAINING THIS: Need to have xvfb installed on nodes in order to make this run.
+        # StrainChoosr uses ete3 to draw trees, which uses PyQt, which needs some sort of display.
+        cmd = 'xvfb-run strainchoosr --treefile {tree} --number {number} ' \
+              '--output_name {output}'.format(tree=os.path.join(work_dir, 'output', 'parsnp.tree'),
+                                              number=desired_num_strains,
+                                              output=os.path.join(work_dir, 'diversitree_report'))
+        subprocess.call(cmd, shell=True)
         output_list = list()
-        output_dict = dict()
-        output_dict['path'] = os.path.join(work_dir, 'output', 'strains.txt')
-        output_dict['filename'] = 'strains.txt'
-        output_list.append(output_dict)
         output_dict = dict()
         output_dict['path'] = os.path.join(work_dir, 'output', 'parsnp.tree')
         output_dict['filename'] = 'tree.nwk'
+        output_list.append(output_dict)
+        output_dict = dict()
+        output_dict['path'] = os.path.join(work_dir, 'diversitree_report.html')
+        output_dict['filename'] = 'diversitree_report.html'
         output_list.append(output_dict)
         redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=4,
                                       notes='DiversiTree process complete!')
