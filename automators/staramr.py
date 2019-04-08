@@ -106,50 +106,48 @@ def staramr_redmine(redmine_instance, issue, work_dir, description):
         os.mkdir(staramr_output_dir)
     except FileExistsError:
         pass
-    # Pointfinder cannot handle an entire folder of sequences; each sample must be processed independently
+
+    genus_seqid_dict = dict()
     for seqid in sorted(seqids):
-        # If the seqid isn't present in the dictionary, it is because the assembly could not be found - or because
-        # MASH screen failed
         try:
-            # Look up the PointFinder and the MASH-calculated genera
-            pointfinder_genus = genus_dict[seqid]
-            genus = rev_org_dict[pointfinder_genus]
-            # If the genus isn't in the pointfinder database, do not attempt to process it
-            if pointfinder_genus in staramr_list:
-                # Create folder to drop FASTA files
-                assembly_folder = os.path.join(work_dir, seqid)
-                make_path(assembly_folder)
-                # Extract FASTA files.
-                retrieve_nas_files(seqids=[seqid],
-                                   outdir=assembly_folder,
-                                   filetype='fasta',
-                                   copyflag=False)
-                fasta = os.path.join(assembly_folder, '{seqid}.fasta'.format(seqid=seqid))
-                outdir = os.path.join(staramr_output_dir, seqid)
-                # Prepare command
-                cmd = '{py} search --pointfinder-organism {orgn} -o {output} {fasta}'\
-                    .format(py=staramr_py,
-                            fasta=fasta,
-                            orgn=pointfinder_genus,
-                            output=outdir,
-                            )
-                # Create another shell script to execute within the PlasmidExtractor conda environment
-                template = "#!/bin/bash\n{} && {}".format(activate, cmd)
-                pointfinder_script = os.path.join(work_dir, 'run_staramr.sh')
-                with open(pointfinder_script, 'w+') as f:
-                    f.write(template)
-                # Modify the permissions of the script to allow it to be run on the node
-                make_executable(pointfinder_script)
-                # Run shell script
-                os.system(pointfinder_script)
-                # Find the pointfinder outputs
+            seqid_genus = genus_dict[seqid]
+            if seqid_genus not in genus_seqid_dict:
+                genus_seqid_dict[seqid_genus] = [seqid]
             else:
+                genus_seqid_dict[seqid_genus].append(seqid)
+        except KeyError:  # Mash sometimes doesn't find a genus!
+            mash_fails.append(seqid)
+
+    for genus in genus_seqid_dict:
+        if genus in staramr_list:
+            assembly_folder = os.path.join(work_dir, genus)
+            make_path(assembly_folder)
+            retrieve_nas_files(seqids=genus_seqid_dict[genus],
+                               outdir=assembly_folder,
+                               filetype='fasta',
+                               copyflag=False)
+            fastas = sorted(glob.glob(os.path.join(assembly_folder, '*.fasta')))
+            outdir = os.path.join(staramr_output_dir, genus)
+            cmd = '{py} search --pointfinder-organism {orgn} -o {output} ' \
+                .format(py=staramr_py,
+                        orgn=genus,
+                        output=outdir,
+                        )
+            for fasta in fastas:
+                cmd += fasta + ' '
+            # Create another shell script to execute within the PlasmidExtractor conda environment
+            template = "#!/bin/bash\n{} && {}".format(activate, cmd)
+            pointfinder_script = os.path.join(work_dir, 'run_staramr.sh')
+            with open(pointfinder_script, 'w+') as f:
+                f.write(template)
+            # Modify the permissions of the script to allow it to be run on the node
+            make_executable(pointfinder_script)
+            # Run shell script
+            os.system(pointfinder_script)
+        else:
+            for seqid in genus_seqid_dict[genus]:
                 unprocessed_seqs.append(seqid)
-        except KeyError:
-            if not os.path.isfile(os.path.join(output_dir, '{seq}_screen.tab'.format(seq=seqid))):
-                missing_seqs.append(seqid)
-            else:
-                mash_fails.append(seqid)
+
     # Zip output
     output_filename = 'staramr_output'
     zip_filepath = zip_folder(results_path=staramr_output_dir,
