@@ -77,7 +77,7 @@ def validate_genus(seq_list, genus):
     metadata_reports = get_combined_metadata(seq_list)
 
     valid_status = collections.OrderedDict()
-
+    print(metadata_reports)
     for seqid in seq_list:
         print('Validating {} genus'.format(seqid))
         df = metadata_reports[seqid]
