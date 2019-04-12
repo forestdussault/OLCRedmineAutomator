@@ -65,7 +65,28 @@ def update_db(date, year, genus, lab, source, amendment_flag, amended_id):
         next_val = 1
 
     # Create ROGA ID
-    roga_id = str(year) + '-ROGA-' + '{:04d}'.format(next_val)
+    select_next_roga_id = sa.select([autoroga_project_table.c.roga_id])
+    keys = con.execute(select_next_roga_id)
+    roga_ids = keys.fetchall()
+    # Now parse through ROGA IDs to figure out what the next one should be. roga_ids are a list of tuples
+    ids_for_year = list()
+    for item in roga_ids:
+        # ROGA is actually first element of tuple.
+        roga = item[0]
+        roga_year = int(roga.split('-')[0])
+        roga_id = int(roga.split('-')[-1])
+        if roga_year == int(year):
+            ids_for_year.append(roga_id)
+
+    i = 1
+    roga_id_found = False
+    while roga_id_found is False:
+        if i in ids_for_year:
+            i += 1
+        else:
+            roga_id_found = True
+
+    roga_id = year + '-ROGA-' + '{:04d}'.format(i)
 
     # Insert new row into autoroga_project_table table
     ins = autoroga_project_table.insert().values(roga_id=roga_id, genus=genus, date=date, lab=lab, source=source,
