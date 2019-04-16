@@ -105,7 +105,7 @@ def snvphyl_redmine(redmine_instance, issue, work_dir, description):
                                                 'again.'.format(str(bad_fastqs)))
 
         # With everything checked, time to actually run the SNVPhyl. Need to call a snvphyl-specific virtualenv.
-        cmd = '/mnt/nas/Virtual_Environments/snvphylcli/bin/python /mnt/nas/slurmtest/snvphyl-galaxy-cli/bin/snvphyl.py' \
+        cmd = '/mnt/nas2/virtual_environments/snvphylcli/bin/python /mnt/nas2/virtual_environments/snvphyl-galaxy-cli/bin/snvphyl.py' \
               ' --deploy-docker --fastq-dir {fastq_dir} ' \
               '--reference-file {ref_file} --min-coverage 5 --output-dir {output} ' \
               '--docker-port {port}'.format(fastq_dir=os.path.join(work_dir, 'fastqs'),

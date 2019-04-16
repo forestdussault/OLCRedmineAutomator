@@ -36,8 +36,7 @@ def metadataretrieve_redmine(redmine_instance, issue, work_dir, description):
 
         # Now for the fun part - we need to go through all of the combinedMetadata sheets we have and pull relevant
         # data for upload.
-        metadata_sheets = glob.glob('/mnt/nas/WGSspades/*/reports/combinedMetadata.csv')
-        metadata_sheets += glob.glob('/mnt/nas/External_WGSspades/*/*/reports/combinedMetadata.csv')
+        metadata_sheets = glob.glob('/mnt/nas2/processed_sequence_data/*/*/reports/combinedMetadata.csv')
 
         for metadata_sheet in metadata_sheets:
             with open(metadata_sheet) as csvfile:

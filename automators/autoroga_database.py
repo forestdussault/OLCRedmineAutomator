@@ -73,10 +73,13 @@ def update_db(date, year, genus, lab, source, amendment_flag, amended_id):
     for item in roga_ids:
         # ROGA is actually first element of tuple.
         roga = item[0]
-        roga_year = int(roga.split('-')[0])
-        roga_id = int(roga.split('-')[-1])
-        if roga_year == int(year):
-            ids_for_year.append(roga_id)
+        try:
+            roga_year = int(roga.split('-')[0])
+            roga_id = int(roga.split('-')[-1])
+            if roga_year == int(year):
+                ids_for_year.append(roga_id)
+        except ValueError:  # For some reason a few old ROGAs don't have proper IDs. Ignore them.
+            pass
 
     i = 1
     roga_id_found = False
