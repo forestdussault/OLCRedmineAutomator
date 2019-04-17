@@ -21,17 +21,21 @@ def qiimecombine_redmine(redmine_instance, issue, work_dir, description):
     """
     Description is expected to be in the following format.
     level=taxlevel
-    column_header=column_sample  # Allow searching on more than one column header by 
+    column_header=column_sample  # Allow searching on more than one column header by adding more lines
     optional! startdate-enddate. If not provided, assume we want to search all.
     
-    So any example would be:
+    For column_header=column_sample rows, using a ~ instead of an = will allow for searching for partial matches
+    instead of complete
+    
+    So an example would be:
     level=5
     sample_type=meat
     180401-190408
     """
+
     # Parse description
     try:
-        level, column_headers, column_contents, start_date, end_date = parse_description(description)
+        level, column_headers, column_contents, start_date, end_date, operators = parse_description(description)
     except:  # Don't try to be too specific here, this could blow up in many ways.
         redmine_instance.issue.update(resource_id=issue.id,
                                       status_id=4,
@@ -67,7 +71,10 @@ def qiimecombine_redmine(redmine_instance, issue, work_dir, description):
             for j in range(len(column_headers)):
                 column_header = column_headers[j]
                 column_content = column_contents[j]
-                df = df.loc[df[column_header] == column_content]
+                if operators[j] == 'equals':
+                    df = df.loc[df[column_header] == column_content]
+                elif operators[j] == 'contains':
+                    df = df.loc[df[column_header].str.contains(column_content)]
             dataframe_list.append(df)
         except KeyError:
             redmine_instance.issue.update(resource_id=issue.id,
@@ -104,22 +111,36 @@ def parse_description(description):
     level = description[0].split('=')[1]
     column_headers = list()
     column_content = list()
-    if '=' not in description[-1]:  # If last line of description doesn't have =, it contains a date.
+    operators = list()
+    # If last line of description doesn't have = or ~, it contains a date.
+    if '=' not in description[-1] and '~' not in description[-1]:
         for i in range(1, len(description) - 1):
-            column_headers.append(description[i].split('=')[0].upper().replace(' ', '_'))
-            column_content.append(description[i].split('=')[1].upper())
+            if '=' in description[i]:
+                column_headers.append(description[i].split('=')[0].upper().replace(' ', '_'))
+                column_content.append(description[i].split('=')[1].upper())
+                operators.append('equals')
+            elif '~' in description[i]:
+                column_headers.append(description[i].split('~')[0].upper().replace(' ', '_'))
+                column_content.append(description[i].split('~')[1].upper())
+                operators.append('contains')
         start_date = description[-1].split('-')[0]
         start_date = string_to_year(start_date)
         end_date = description[-1].split('-')[1]
         end_date = string_to_year(end_date)
     else:  # If no date range included in description, have date range include everything.
         for i in range(1, len(description)):
-            column_headers.append(description[i].split('=')[0].upper().replace(' ', '_'))
-            column_content.append(description[i].split('=')[1].upper())
+            if '=' in description[i]:
+                column_headers.append(description[i].split('=')[0].upper().replace(' ', '_'))
+                column_content.append(description[i].split('=')[1].upper())
+                operators.append('equals')
+            elif '~' in description[i]:
+                column_headers.append(description[i].split('~')[0].upper().replace(' ', '_'))
+                column_content.append(description[i].split('~')[1].upper())
+                operators.append('contains')
         start_date = string_to_year('111111')
         end_date = string_to_year('991111')
 
-    return level, column_headers, column_content, start_date, end_date
+    return level, column_headers, column_content, start_date, end_date, operators
 
 
 if __name__ == '__main__':
