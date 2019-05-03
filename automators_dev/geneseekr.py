@@ -61,7 +61,6 @@ def geneseekr_redmine(redmine_instance, issue, work_dir, description):
         'virulence': os.path.join(dbpath, 'virulence'),
     }
     try:
-    # Parse description to figure out what SEQIDs we need to run on.
         seqids = list()
         for item in description:
             item = item.upper().rstrip()
@@ -82,6 +81,7 @@ def geneseekr_redmine(redmine_instance, issue, work_dir, description):
                 continue
             if 'ORGANISM' in item:
                 argument_dict['organism'] = item.split('=')[1].capitalize()
+                continue
             if 'ANALYSIS' in item:
                 argument_dict['analysis'] = item.split('=')[1].lower()
                 continue

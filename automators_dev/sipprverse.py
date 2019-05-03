@@ -22,8 +22,6 @@ def sipprverse_redmine(redmine_instance, issue, work_dir, description):
         'custom', 'full', 'gdcs', 'genesippr', 'mash', 'mlst', 'pointfinder', 'resfinder', 'rmlst', 'serosippr',
         'sixteens', 'virulence'
     ]
-    # Variable to hold the current analysis type
-    analysis = str()
     # Dictionary of analysis types to argument flags to pass to the script
     argument_flags = {
                          'custom': '-U {fasta}'.format(fasta=os.path.join(work_dir, 'targets.tfa')),
@@ -39,16 +37,37 @@ def sipprverse_redmine(redmine_instance, issue, work_dir, description):
                          'virulence': '-V',
                          'full': '-F'
     }
+    # Variable to hold supplied arguments
+    argument_dict = {
+        'analysis': str(),
+        'averagedepth': 2,
+        'kmersize': 19,
+        'cutoff': 0.90,
+        'allowsoftclips': False,
+    }
     try:
         # Parse description to figure out what SEQIDs we need to run on.
         seqids = list()
         for item in description:
             item = item.upper().rstrip()
-            if item in [lower.upper() for lower in analyses]:
-                analysis = item.lower()
+            if 'AVERAGEDEPTH' in item:
+                argument_dict['averagedepth'] = int(item.split('=')[1].lower())
                 continue
+            if 'CUTOFF' in item:
+                argument_dict['cutoff'] = float(item.split('=')[1].lower())
+                continue
+            if 'KMERSIZE' in item:
+                argument_dict['kmersize'] = int(item.split('=')[1].lower())
+                continue
+            if 'ANALYSIS' in item:
+                argument_dict['analysis'] = item.split('=')[1].lower()
+                continue
+            if 'ALLOWSOFTCLIPS' in item:
+                argument_dict['allowsoftclips'] = True
+                continue
+            # Otherwise the item should be a SEQID
             seqids.append(item)
-        if analysis == 'custom':
+        if argument_dict['analysis'] == 'custom':
             # Download the attached FASTA file.
             # First, get the attachment id - this seems like a kind of hacky way to do this, but I have yet to figure
             # out a better way to do it.
@@ -73,12 +92,24 @@ def sipprverse_redmine(redmine_instance, issue, work_dir, description):
         else:
             dbpath = COWBAT_DATABASES
         # Ensure that the analysis type is provided
-        if not analysis:
+        if not argument_dict['analysis']:
             redmine_instance.issue.update(resource_id=issue.id,
-                                          notes='WARNING: Could not identify the requested analysis type: {at}. '
-                                                'Please ensure that the first line of the issue contains one'
-                                                ' of the following keywords: {ats}'.format(at=analysis,
-                                                                                           ats=','.join(analyses)))
+                                          notes='WARNING: No analysis type provided. '
+                                                'Please ensure that issue contains '
+                                                '"analysistype=requested_analysis_type", where requested_analysis_type '
+                                                ' is one of the following keywords: {ats}. See the the usage guide: '
+                                                'https://olc-bioinformatics.github.io/redmine-docs/analysis/sipprverse/'
+                                                ' for additional details'.format(ats=','.join(analyses)))
+            return
+        # Ensure that the supplied analysis type is valid
+        if argument_dict['analysis'] not in analyses:
+            redmine_instance.issue \
+                .update(resource_id=issue.id,
+                        notes='WARNING: Requested analysis type: {at} not in list of supported analyses: {ats}. Please '
+                              'see https://olc-bioinformatics.github.io/redmine-docs/analysis/sipprverse/ '
+                              'for additional details'.format(at=argument_dict['analysis'],
+                                                              ats=','.join(analyses)))
+            return
         # Ensure that SEQIDs were included
         if not seqids:
             redmine_instance.issue.update(resource_id=issue.id,
@@ -99,15 +130,20 @@ def sipprverse_redmine(redmine_instance, issue, work_dir, description):
         activate = 'source /home/ubuntu/miniconda3/bin/activate /mnt/nas2/virtual_environments/sipprverse'
         sippr_py = '/mnt/nas2/virtual_environments/sipprverse/bin/sippr.py'
         # Run sipprverse with the necessary arguments
-        sippr_cmd = 'python {sippr_py} -s {seqpath} -o {outpath} -r {dbpath} {at}'\
+        sippr_cmd = 'python {sippr_py} -s {seqpath} -o {outpath} -r {dbpath} -a {ad} -k {ks} -c {cut} {at}'\
             .format(sippr_py=sippr_py,
                     seqpath=work_dir,
                     outpath=work_dir,
                     dbpath=dbpath,
-                    at=argument_flags[analysis])
+                    ad=argument_dict['averagedepth'],
+                    ks=argument_dict['kmersize'],
+                    cut=argument_dict['cutoff'],
+                    at=argument_flags[argument_dict['analysis']])
+        # Add the allow_soft_clips option if required
+        sippr_cmd += ' -sc' if argument_dict['allowsoftclips'] else ''
         redmine_instance.issue.update(resource_id=issue.id,
                                       notes='Sipprverse command:\n {cmd}'.format(cmd=sippr_cmd))
-        # Create another shell script to execute within the PlasmidExtractor conda environment
+        # Create another shell script to execute within the conda environment
         template = "#!/bin/bash\n{} && {}".format(activate, sippr_cmd)
         sipprverse_script = os.path.join(work_dir, 'run_sipprverse.sh')
         with open(sipprverse_script, 'w+') as file:
@@ -141,11 +177,15 @@ def sipprverse_redmine(redmine_instance, issue, work_dir, description):
         redmine_instance.issue.update(resource_id=issue.id,
                                       uploads=output_list,
                                       status_id=4,
-                                      notes='{at} analysis with sipprverse complete!'.format(at=analysis.lower()))
+                                      notes='{at} analysis with sipprverse complete!'
+                                      .format(at=argument_dict['analysis'].lower()))
     except Exception as e:
         redmine_instance.issue.update(resource_id=issue.id,
                                       notes='Something went wrong! Send this error traceback to your friendly '
-                                            'neighborhood bioinformatician: {}'.format(e))
+                                            'neighborhood bioinformatician: {error}\nAlternatively, please check out '
+                                            'the usage guide: '
+                                            'https://olc-bioinformatics.github.io/redmine-docs/analysis/sipprverse/'
+                                      .format(error=e))
 
 
 def verify_fastq_files_present(seqid_list, fastq_dir):

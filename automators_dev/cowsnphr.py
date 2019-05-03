@@ -3,7 +3,9 @@ import glob
 import click
 import pickle
 import shutil
+import zipfile
 from biotools import mash
+from externalretrieve import upload_to_ftp
 from nastools.nastools import retrieve_nas_files
 
 
@@ -12,13 +14,13 @@ from nastools.nastools import retrieve_nas_files
 @click.option('--issue', help='Path to pickled Redmine issue')
 @click.option('--work_dir', help='Path to Redmine issue work directory')
 @click.option('--description', help='Path to pickled Redmine description')
-def snvphyl_redmine(redmine_instance, issue, work_dir, description):
-    # Unpickle Redmine objects
-    redmine_instance = pickle.load(open(redmine_instance, 'rb'))
-    issue = pickle.load(open(issue, 'rb'))
-    description = pickle.load(open(description, 'rb'))
-
+def cowsnphr_redmine(redmine_instance, issue, work_dir, description):
     try:
+        # Unpickle Redmine objects
+        redmine_instance = pickle.load(open(redmine_instance, 'rb'))
+        issue = pickle.load(open(issue, 'rb'))
+        description = pickle.load(open(description, 'rb'))
+        #
         query_list = list()
         reference = list()
         compare = False
@@ -35,7 +37,9 @@ def snvphyl_redmine(redmine_instance, issue, work_dir, description):
             else:
                 if 'REFERENCE' not in item:
                     reference.append(item)
-
+        # Create output folder
+        reference_folder = os.path.join(work_dir, 'ref')
+        os.makedirs(reference_folder)
         # Retrieve our reference file. Error user if they selected anything but one reference and don't continue.
         if len(reference) != 1:
             redmine_instance.issue.update(resource_id=issue.id,
@@ -47,11 +51,11 @@ def snvphyl_redmine(redmine_instance, issue, work_dir, description):
         if reference[0].upper() != 'ATTACHED':
             # Extract our reference file to our working directory.
             retrieve_nas_files(seqids=reference,
-                               outdir=work_dir,
+                               outdir=reference_folder,
                                filetype='fasta',
                                copyflag=True)
             # Check that the file was successfully extracted. If it wasn't boot the user.
-            if len(glob.glob(os.path.join(work_dir, '*fasta'))) == 0:
+            if len(glob.glob(os.path.join(reference_folder, '*fasta'))) == 0:
                 redmine_instance.issue.update(resource_id=issue.id,
                                               notes='ERROR: Could not find the specified reference file.'
                                                     ' Please verify it is a correct SEQID, create a new '
@@ -64,13 +68,14 @@ def snvphyl_redmine(redmine_instance, issue, work_dir, description):
             # appropriate error message)
             attachment = redmine_instance.issue.get(issue.id, include='attachments')
             attachment_id = 0
+            ref_name = 'reference.fasta'
             for item in attachment.attachments:
                 attachment_id = item.id
-
+                ref_name = item.filename
             # Download if we found an attachment, and use as our reference. Otherwise, exit and tell user to try again
             if attachment_id != 0:
                 attachment = redmine_instance.attachment.get(attachment_id)
-                attachment.download(savepath=work_dir, filename='reference.fasta')
+                attachment.download(savepath=reference_folder, filename=ref_name)
             else:
                 redmine_instance.issue.update(resource_id=issue.id,
                                               notes='ERROR: You specified that the reference would be in attached file,'
@@ -79,14 +84,42 @@ def snvphyl_redmine(redmine_instance, issue, work_dir, description):
                                               status_id=4)
                 return
 
+        # PROKKA
+        # These unfortunate hard coded paths appear to be necessary
+        activate = 'source /home/ubuntu/miniconda3/bin/activate /mnt/nas2/virtual_environments/prokka'
+        prokka = '/mnt/nas2/virtual_environments/prokka/bin/prokka'
+
+        # Prepare command
+        ref_file = glob.glob(os.path.join(reference_folder, '*fasta'))[0]
+        prefix = os.path.splitext(os.path.basename(ref_file))[0]
+        cmd = '{prokka} --force --outdir {output_folder} --prefix {prefix} {ref_file}'\
+            .format(prokka=prokka,
+                    output_folder=reference_folder,
+                    prefix=prefix,
+                    ref_file=ref_file)
+        # Update the issue with the GeneSeekr command
+        redmine_instance.issue.update(resource_id=issue.id,
+                                      notes='Prokka command:\n {cmd}'.format(cmd=cmd))
+        # Create another shell script to execute within the PlasmidExtractor conda environment
+        template = "#!/bin/bash\n{} && {}".format(activate, cmd)
+        prokka_script = os.path.join(work_dir, 'run_prokka.sh')
+        with open(prokka_script, 'w+') as file:
+            file.write(template)
+        make_executable(prokka_script)
+
+        # Run shell script
+        os.system(prokka_script)
+
+        #
+        seq_folder = os.path.join(work_dir, 'fastqs')
         # Now extract our query files.
         retrieve_nas_files(seqids=query_list,
-                           outdir=os.path.join(work_dir, 'fastqs'),
+                           outdir=seq_folder,
                            filetype='fastq',
-                           copyflag=True)
+                           copyflag=False)
 
         # With our query files extracted, verify that all the SEQIDs the user specified were able to be found.
-        missing_fastqs = verify_fastqs_present(query_list, os.path.join(work_dir, 'fastqs'))
+        missing_fastqs = verify_fastqs_present(query_list, seq_folder)
         if len(missing_fastqs) > 0:
             redmine_instance.issue.update(resource_id=issue.id,
                                           notes='Warning! Could not find the following requested query SEQIDs: '
@@ -94,41 +127,96 @@ def snvphyl_redmine(redmine_instance, issue, work_dir, description):
                                                 ' again.'.format(str(missing_fastqs)))
 
         # Now check that the FASTQ files aren't too far away from the specified reference file.
-        bad_fastqs = check_distances(ref_fasta=glob.glob(os.path.join(work_dir, '*fasta'))[0],
-                                     fastq_folder=os.path.join(work_dir, 'fastqs'),
+        bad_fastqs = check_distances(ref_fasta=glob.glob(os.path.join(reference_folder, '*fasta'))[0],
+                                     fastq_folder=seq_folder,
                                      work_dir=work_dir)
         if len(bad_fastqs) > 0:
             redmine_instance.issue.update(resource_id=issue.id,
                                           notes='Warning! The following SEQIDs were found to be fairly'
                                                 ' divergent from the reference file specified:{} \nYou may'
-                                                ' want to start a new SNVPhyl issue without them and try '
+                                                ' want to start a new COWSNPhR issue without them and try '
                                                 'again.'.format(str(bad_fastqs)))
 
-        # With everything checked, time to actually run the SNVPhyl. Need to call a snvphyl-specific virtualenv.
-        cmd = '/mnt/nas/Virtual_Environments/snvphylcli/bin/python /mnt/nas/slurmtest/snvphyl-galaxy-cli/bin/snvphyl.py' \
-              ' --deploy-docker --fastq-dir {fastq_dir} ' \
-              '--reference-file {ref_file} --min-coverage 5 --output-dir {output} ' \
-              '--docker-port {port}'.format(fastq_dir=os.path.join(work_dir, 'fastqs'),
-                                            ref_file=glob.glob(os.path.join(work_dir, '*fasta'))[0],
-                                            output=os.path.join(work_dir, 'output'),
-                                            port='48888')
-        os.system(cmd)
+        # COWSNPhR
+        # These unfortunate hard coded paths appear to be necessary
+        activate = 'source /home/ubuntu/miniconda3/bin/activate /mnt/nas2/virtual_environments/vsnp_dev'
+        binary = '/mnt/nas2/virtual_environments/vSNP/cowsnphr/cowsnphr.py'
 
-        # Now need to create a zip archive of the results file, upload it, and clean up the fastq files.
-        shutil.make_archive(os.path.join(work_dir, 'SNVPhyl_' + str(issue.id)), 'zip', os.path.join(work_dir, 'output'))
-        output_list = list()
-        output_dict = dict()
-        output_dict['path'] = os.path.join(work_dir, 'SNVPhyl_' + str(issue.id) + '.zip')
-        output_dict['filename'] = 'SNVPhyl_' + str(issue.id) + '.zip'
-        output_list.append(output_dict)
-        redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=4,
-                                      notes='SNVPhyl process complete!')
+        # Prepare command
+        cmd = '{bin} -s {seq_folder} -r {ref_folder} -w /mnt/nas2' \
+            .format(bin=binary,
+                    seq_folder=seq_folder,
+                    ref_folder=reference_folder)
+        # Update the issue with the GeneSeekr command
+        redmine_instance.issue.update(resource_id=issue.id,
+                                      notes='COWSNPhR command:\n {cmd}'.format(cmd=cmd))
+        # Create another shell script to execute within the PlasmidExtractor conda environment
+        template = "#!/bin/bash\n{} && {}".format(activate, cmd)
+        cowsnphr_script = os.path.join(work_dir, 'run_cowsnphr.sh')
+        with open(cowsnphr_script, 'w+') as file:
+            file.write(template)
+        make_executable(cowsnphr_script)
 
-        shutil.rmtree(os.path.join(work_dir, 'fastqs'))
+        # Run shell script
+        os.system(cowsnphr_script)
+
+        # Zip output
+        output_filename = 'cowsnphr_output_{}'.format(issue.id)
+        zip_filepath = zip_folder(output_dir=work_dir,
+                                  output_filename=output_filename)
+        zip_filepath += '.zip'
+        #
+        upload_successful = upload_to_ftp(local_file=zip_filepath)
+        # Prepare upload
+        if upload_successful:
+            redmine_instance.issue.update(resource_id=issue.id,
+                                          status_id=4,
+                                          notes='COWSNPhr process complete!\n\n'
+                                                'Results are available at the following FTP address:\n'
+                                                'ftp://ftp.agr.gc.ca/outgoing/cfia-ak/{}'
+                                          .format(os.path.split(zip_filepath)[1]))
+        else:
+            redmine_instance.issue.update(resource_id=issue.id, status_id=4,
+                                          notes='Upload of result files was unsuccessful due to FTP connectivity '
+                                                'issues. Please try again later.')
+        # Clean up files
+        shutil.rmtree(reference_folder)
+        shutil.rmtree(seq_folder)
     except Exception as e:
         redmine_instance.issue.update(resource_id=issue.id,
                                       notes='Something went wrong! Send this error traceback to your friendly '
                                             'neighborhood bioinformatician: {}'.format(e))
+
+
+def make_executable(path):
+    """
+    Takes a shell script and makes it executable (chmod +x)
+    :param path: path to shell script
+    """
+    mode = os.stat(path).st_mode
+    mode |= (mode & 0o444) >> 2
+    os.chmod(path, mode)
+
+
+def verify_fasta_files_present(seqid_list, fasta_dir):
+    missing_fastas = list()
+    for seqid in seqid_list:
+        if len(glob.glob(os.path.join(fasta_dir, seqid + '*.fasta'))) == 0:
+            missing_fastas.append(seqid)
+    return missing_fastas
+
+
+def zip_folder(output_dir, output_filename):
+    folder_base = ['alignments', 'summary_tables', 'tree_files', 'vcf_files']
+    output_base = os.path.join(output_dir, 'fastqs', output_filename)
+    with zipfile.ZipFile(output_base + '.zip', 'w', zipfile.ZIP_DEFLATED) as zippo:
+        for folder in folder_base:
+            to_zip = os.path.join(output_dir, 'fastqs', folder)
+            for root, dirs, files in os.walk(to_zip):
+                for filename in files:
+                    dir_name = os.path.split(root)[-1]
+                    zippo.write(os.path.join(root, filename), arcname=os.path.join(dir_name, filename))
+    return output_base
 
 
 def check_distances(ref_fasta, fastq_folder, work_dir):
@@ -139,7 +227,6 @@ def check_distances(ref_fasta, fastq_folder, work_dir):
               output_file=os.path.join(work_dir, 'distances.tab'))
     mash_output = mash.read_mash_output(os.path.join(work_dir, 'distances.tab'))
     for item in mash_output:
-        print(item.reference, item.query, str(item.distance))
         if item.distance > 0.15:  # Moved value from 0.06 to 0.15 - was definitely too conservative before.
             bad_fastqs.append(item.reference)
     return bad_fastqs
@@ -159,4 +246,4 @@ def verify_fastqs_present(query_list, fastq_folder):
 
 
 if __name__ == '__main__':
-    snvphyl_redmine()
+    cowsnphr_redmine()
