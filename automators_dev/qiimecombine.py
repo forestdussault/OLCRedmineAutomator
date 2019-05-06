@@ -87,6 +87,32 @@ def qiimecombine_redmine(redmine_instance, issue, work_dir, description):
     output_list.append(output_dict)
     result_df = pd.concat(dataframe_list, ignore_index=True, sort=False)
     result_df.fillna(0, inplace=True)
+    # Drop any columns that are entirely zeros. Might be a more pandas-esque way to do this, but this works and is fast.
+    columns_to_drop = list()
+    for column in result_df.columns:
+        all_zeros = True
+        for item in result_df[column]:
+            if str(item) != '0':
+                all_zeros = False
+        if all_zeros is True:
+            columns_to_drop.append(column)
+
+    result_df = result_df.drop(columns_to_drop, axis=1)
+
+    # Also want to reorder the columns. Need to have index first, then all the taxonomy information, and then everything
+    # else.
+    output_column_order = ['INDEX']
+    # First pass through - grab all the taxonomy information.
+    for column in result_df.columns:
+        if column.startswith('D_'):
+            output_column_order.append(column)
+    # Final pass - grab everything else.
+    for column in result_df.columns:
+        if column != 'INDEX' and not column.startswith('D_'):
+            output_column_order.append(column)
+
+    result_df = result_df[output_column_order]
+
     result_df.to_csv(os.path.join(work_dir, 'results.csv'), index=False)
 
     # Clean up files.
