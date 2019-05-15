@@ -111,7 +111,7 @@ def snvphyl_redmine(redmine_instance, issue, work_dir, description):
               '--docker-port {port}'.format(fastq_dir=os.path.join(work_dir, 'fastqs'),
                                             ref_file=glob.glob(os.path.join(work_dir, '*fasta'))[0],
                                             output=os.path.join(work_dir, 'output'),
-                                            port='48888')
+                                            port=issue.id)
         os.system(cmd)
 
         # Now need to create a zip archive of the results file, upload it, and clean up the fastq files.
