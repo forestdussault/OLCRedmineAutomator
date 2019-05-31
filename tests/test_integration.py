@@ -76,7 +76,28 @@ def create_test_issues(redmine):
     issues_created['staramr'] = create_issue(redmine_instance=redmine,
                                              subject='staramr',
                                              description='2014-SEQ-0282')
+    logging.info('Issue creation complete.')
     return issues_created
+
+
+def validate_attachments(issue, file_to_find):
+    validation_status = 'Unknown'
+    if len(issue.attachments) > 0:
+        attachment_found = False
+        for attachment in issue.attachments:
+            if attachment.filename == file_to_find:
+                attachment_found = True
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    attachment.download(savepath=tmpdir, filename=file_to_find)
+                    if os.path.getsize(os.path.join(tmpdir, file_to_find)) > 0:
+                        validation_status = 'Validated'
+                    else:
+                        validation_status = 'Uploaded file has zero size.'
+        if attachment_found is False:
+            validation_status = 'Could not find {}'.format(file_to_find)
+    else:
+        validation_status = 'No attachments, validation failed.'
+    return validation_status
 
 
 def monitor_issues(redmine, issue_dict, timeout):
@@ -85,7 +106,7 @@ def monitor_issues(redmine, issue_dict, timeout):
     :param redmine: Instantiated redmine instance.
     :param issue_dict: Dictionary created by create_test_issues (issue subjects as keys, issue IDs as values)
     :param timeout: Number of seconds to wait for all issues to finish running
-    :return:
+    :return: Dictionary with issue subjects as keys, and some sort of status message for each as values
     """
     all_complete = False
     total_time_taken = 0
@@ -97,6 +118,7 @@ def monitor_issues(redmine, issue_dict, timeout):
 
     # Now loop through all the things!
     while all_complete is False and total_time_taken < timeout:
+        logging.info('Checking tasks for completion')
         all_complete = True  # Set flag to true - if any of our issues are not finished, this gets set back to False
         # Check all issues for completion.
         for issue_subject in issue_dict:
@@ -105,43 +127,38 @@ def monitor_issues(redmine, issue_dict, timeout):
 
             if issue_subject == 'amrsummary' and issues_validated[issue_subject] == 'Unknown':
                 if issue.status.id == 4:  # 4 corresponds to issue being complete.
-                    if len(issue.attachments) > 0:  # Make sure attachments got uploaded
-                        amr_summary_found = False
-                        for attachment in issue.attachments:
-                            if attachment.filename == 'amr_summary.csv':
-                                amr_summary_found = True
-                                with tempfile.TemporaryDirectory() as tmpdir:
-                                    attachment.download(savepath=tmpdir, filename='amr_summary.csv')
-                                    if os.path.getsize(os.path.join(tmpdir, 'amr_summary.csv')) > 0:
-                                        issues_validated[issue_subject] = 'Validated'
-                                        # Also validate that report has correct stuff
-                        if amr_summary_found is False:
-                            issues_validated[issue_subject] = 'No amr_summary.csv found, Validation Failed'
-
-                    else:
-                        issues_validated[issue_subject] = 'No Attachments, Validation Failed.'
+                    issues_validated[issue_subject] = validate_attachments(issue, 'amr_summary.csv')
+                    logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
                 else:  # If hasn't finished yet, just wait!
                     all_complete = False
 
-            elif issue_subject == 'autoclark':
-                # Check for abundance.xlsx attachment, make sure size is nonzero
-                # Also validate that report has correct stuff
-                pass
-            elif issue_subject == 'ecgf':
-                # Check for ecgf_output_ISSUEID.zip, make sure size is nonzero
-                # Also validate that report has correct stuff
-                pass
-            elif issue_subject == 'ec_typer':
-                # Check for ec_typer_report.tsv, non-zero size
-                # Also validate that report has correct stuff
-                pass
+            elif issue_subject == 'autoclark' and issues_validated[issue_subject] == 'Unknown':
+                if issue.status.id == 4:
+                    issues_validated[issue_subject] = validate_attachments(issue, 'abundance.xlsx')
+                    logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
+                else:
+                    all_complete = False
+            elif issue_subject == 'ecgf' and issues_validated[issue_subject] == 'Unknown':
+                if issue.status.id == 4:
+                    issues_validated[issue_subject] = validate_attachments(issue, 'eCGF_output_{}.zip'.format(issue.id))
+                    logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
+                else:
+                    all_complete = False
+            elif issue_subject == 'ec_typer' and issues_validated[issue_subject] == 'Unknown':
+                if issue.status.id == 4:
+                    issues_validated[issue_subject] = validate_attachments(issue, 'ec_typer_report.tsv')
+                    logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
+                else:
+                    all_complete = False
             elif issue_subject == 'externalretrieve':
                 # Check for ISSUEID.zip on outgoing FTP (or just parse updates for that address)
                 pass
-            elif issue_subject == 'diversitree':
-                # Check for diversitree_report.html attachment, non-zero size
-                # Also validate that report has correct stuff
-                pass
+            elif issue_subject == 'diversitree' and issues_validated[issue_subject] == 'Unknown':
+                if issue.status.id == 4:
+                    issues_validated[issue_subject] = validate_attachments(issue, 'diversitree_report.html')
+                    logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
+                else:
+                    all_complete = False
             elif issue_subject == 'geneseekr':
                 # Check for ??? (geneseekr_blastn I think)
                 # Also validate that report has correct stuff
@@ -153,18 +170,24 @@ def monitor_issues(redmine, issue_dict, timeout):
             elif issue_subject == 'prokka':
                 # Check for prokka_output_ISSUEID.zip on outgoing FTP
                 pass
-            elif issue_subject == 'resfinder':
-                # Check for resfinder_blastn.xlsx attachment, nonzero size
-                # Also validate that report has correct stuff
-                pass
-            elif issue_subject == 'sipprverse':
-                # Check for sipprverse_output.zip, non-zero size
-                # Also validate that report has correct stuff
-                pass
-            elif issue_subject == 'staramr':
-                # Check for staramr_output.zip, non-zero size
-                # Also validate that report has correct stuff
-                pass
+            elif issue_subject == 'resfinder' and issues_validated[issue_subject] == 'Unknown':
+                if issue.status.id == 4:
+                    issues_validated[issue_subject] = validate_attachments(issue, 'resfinder_blastn.xlsx')
+                    logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
+                else:
+                    all_complete = False
+            elif issue_subject == 'sipprverse' and issues_validated[issue_subject] == 'Unknown':
+                if issue.status.id == 4:
+                    issues_validated[issue_subject] = validate_attachments(issue, 'sipprverse_output.zip')
+                    logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
+                else:
+                    all_complete = False
+            elif issue_subject == 'staramr' and issues_validated[issue_subject] == 'Unknown':
+                if issue.status.id == 4:
+                    issues_validated[issue_subject] = validate_attachments(issue, 'staramr_output.zip')
+                    logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
+                else:
+                    all_complete = False
         total_time_taken += increment
         time.sleep(increment)
 
