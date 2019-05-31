@@ -18,7 +18,7 @@ def before_send(event, hint):
     the error report won't get sent, as it isn't really an error.
     """
     message = event['logentry']['message']
-    if re.match(r'\d{4}_[A-Z]+_\d{4}', message):
+    if re.match(r'\d{4}-[A-Z]+-\d{4}', message):
         return None
     else:
         return event
