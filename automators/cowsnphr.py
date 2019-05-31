@@ -4,6 +4,8 @@ import click
 import pickle
 import shutil
 import zipfile
+import sentry_sdk
+from automator_settings import SENTRY_DSN
 from biotools import mash
 from externalretrieve import upload_to_ftp
 from nastools.nastools import retrieve_nas_files
@@ -15,6 +17,7 @@ from nastools.nastools import retrieve_nas_files
 @click.option('--work_dir', help='Path to Redmine issue work directory')
 @click.option('--description', help='Path to pickled Redmine description')
 def cowsnphr_redmine(redmine_instance, issue, work_dir, description):
+    sentry_sdk.init(SENTRY_DSN)
     try:
         # Unpickle Redmine objects
         redmine_instance = pickle.load(open(redmine_instance, 'rb'))
@@ -183,9 +186,10 @@ def cowsnphr_redmine(redmine_instance, issue, work_dir, description):
         shutil.rmtree(reference_folder)
         shutil.rmtree(seq_folder)
     except Exception as e:
+        sentry_sdk.capture_exception(e)
         redmine_instance.issue.update(resource_id=issue.id,
-                                      notes='Something went wrong! Send this error traceback to your friendly '
-                                            'neighborhood bioinformatician: {}'.format(e))
+                                      notes='Something went wrong! We log this automatically and will look into the '
+                                            'problem and get back to you with a fix soon.')
 
 
 def make_executable(path):

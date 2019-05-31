@@ -6,6 +6,8 @@ import shutil
 import click
 import glob
 import os
+import sentry_sdk
+from automator_settings import SENTRY_DSN
 
 
 def write_report(summary_dict, seqid, genus, key):
@@ -119,6 +121,7 @@ def write_table_report(summary_dict, seqid, genus):
 @click.option('--work_dir', help='Path to Redmine issue work directory')
 @click.option('--description', help='Path to pickled Redmine description')
 def pointfinder_redmine(redmine_instance, issue, work_dir, description):
+    sentry_sdk.init(SENTRY_DSN)
     # Unpickle Redmine objects
     redmine_instance = pickle.load(open(redmine_instance, 'rb'))
     issue = pickle.load(open(issue, 'rb'))
@@ -277,7 +280,7 @@ def pointfinder_redmine(redmine_instance, issue, work_dir, description):
     activate = 'source /home/ubuntu/miniconda3/bin/activate /mnt/nas2/virtual_environments/pointfinder'
     pointfinder_py = '/mnt/nas2/virtual_environments/pointfinder/pointfinder-3.0/pointfinder-3.0.py'
     # Database locations
-    pointfinder_db = '/mnt/scratch/12900/pointfinder_db'
+    pointfinder_db = '/mnt/nas2/databases/assemblydatabases/0.5.0.0/pointfinder'
     # List of organisms in the pointfinder database
     pointfinder_list = ['campylobacter', 'e.coli', 'tuberculosis', 'gonorrhoeae', 'salmonella']
     try:

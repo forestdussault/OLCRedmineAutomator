@@ -5,6 +5,8 @@ import pickle
 import shutil
 import pandas as pd
 from pandas import ExcelWriter
+import sentry_sdk
+from automator_settings import SENTRY_DSN
 from nastools.nastools import retrieve_nas_files
 from automator_settings import COWBAT_IMAGE, COWBAT_DATABASES
 
@@ -15,6 +17,7 @@ from automator_settings import COWBAT_IMAGE, COWBAT_DATABASES
 @click.option('--work_dir', help='Path to Redmine issue work directory')
 @click.option('--description', help='Path to pickled Redmine description')
 def merge_redmine(redmine_instance, issue, work_dir, description):
+    sentry_sdk.init(SENTRY_DSN)
     # Unpickle Redmine objects
     redmine_instance = pickle.load(open(redmine_instance, 'rb'))
     issue = pickle.load(open(issue, 'rb'))
@@ -104,9 +107,10 @@ def merge_redmine(redmine_instance, issue, work_dir, description):
         redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=4,
                                       notes='Merge Process Complete! Reports attached.')
     except Exception as e:
+        sentry_sdk.capture_exception(e)
         redmine_instance.issue.update(resource_id=issue.id,
-                                      notes='Something went wrong! Send this error traceback to your friendly '
-                                            'neighborhood bioinformatician: {}'.format(e))
+                                      notes='Something went wrong! We log this automatically and will look into the '
+                                            'problem and get back to you with a fix soon.')
 
 
 def convert_excel_file(infile, outfile):

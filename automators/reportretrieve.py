@@ -4,6 +4,8 @@ import click
 import ftplib
 import pickle
 import shutil
+import sentry_sdk
+from automator_settings import SENTRY_DSN
 from externalretrieve import upload_to_ftp
 from automator_settings import FTP_USERNAME, FTP_PASSWORD
 
@@ -14,6 +16,7 @@ from automator_settings import FTP_USERNAME, FTP_PASSWORD
 @click.option('--work_dir', help='Path to Redmine issue work directory')
 @click.option('--description', help='Path to pickled Redmine description')
 def reportretrieve_redmine(redmine_instance, issue, work_dir, description):
+    sentry_sdk.init(SENTRY_DSN)
     print('External retrieving!')
     # Unpickle Redmine objects
     redmine_instance = pickle.load(open(redmine_instance, 'rb'))
@@ -87,9 +90,10 @@ def reportretrieve_redmine(redmine_instance, issue, work_dir, description):
                                                 'Please try again later.')
 
     except Exception as e:
+        sentry_sdk.capture_exception(e)
         redmine_instance.issue.update(resource_id=issue.id,
-                                      notes='Something went wrong! Send this error traceback to your friendly '
-                                            'neighborhood bioinformatician: {}'.format(e))
+                                      notes='Something went wrong! We log this automatically and will look into the '
+                                            'problem and get back to you with a fix soon.')
 
 
 if __name__ == '__main__':
