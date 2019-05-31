@@ -6,6 +6,7 @@ import shutil
 import ftplib
 import sentry_sdk
 from automator_settings import SENTRY_DSN
+from amrsummary import before_send
 from externalretrieve import upload_to_ftp
 from automator_settings import FTP_USERNAME, FTP_PASSWORD
 from nastools.nastools import retrieve_nas_files
@@ -16,7 +17,7 @@ from nastools.nastools import retrieve_nas_files
 @click.option('--work_dir', help='Path to Redmine issue work directory')
 @click.option('--description', help='Path to pickled Redmine description')
 def mob_suite(redmine_instance, issue, work_dir, description):
-    sentry_sdk.init(SENTRY_DSN)
+    sentry_sdk.init(SENTRY_DSN, before_send=before_send)
     """
     """
     # Unpickle Redmine objects

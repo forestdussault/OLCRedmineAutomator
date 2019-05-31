@@ -1,4 +1,5 @@
 import os
+import re
 import glob
 import click
 import pickle
@@ -7,13 +8,29 @@ import sentry_sdk
 from automator_settings import COWBAT_DATABASES, SENTRY_DSN
 from nastools.nastools import retrieve_nas_files
 
+
+def before_send(event, hint):
+    """
+    The cluster we send jobs to has its clock ahead by a bunch for reasons I don't remember.
+    Because of this, whenver we retrieve any SeqIDs, Sentry freaks out because the timestamps attached
+    are ahead of where they should be, and ends up sending error notifications each time we retrieve any sequence
+    data. Adding this callback to the sentry init finds if the message is formatted like a SeqID, and if it is
+    the error report won't get sent, as it isn't really an error.
+    """
+    message = event['logentry']['message']
+    if re.match(r'\d{4}_[A-Z]+_\d{4}', message):
+        return None
+    else:
+        return event
+
+
 @click.command()
 @click.option('--redmine_instance', help='Path to pickled Redmine API instance')
 @click.option('--issue', help='Path to pickled Redmine issue')
 @click.option('--work_dir', help='Path to Redmine issue work directory')
 @click.option('--description', help='Path to pickled Redmine description')
 def resfinder_redmine(redmine_instance, issue, work_dir, description):
-    sentry_sdk.init(SENTRY_DSN)
+    sentry_sdk.init(SENTRY_DSN, before_send=before_send)
     # Unpickle Redmine objects
     redmine_instance = pickle.load(open(redmine_instance, 'rb'))
     issue = pickle.load(open(issue, 'rb'))

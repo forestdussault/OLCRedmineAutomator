@@ -5,6 +5,7 @@ import ftplib
 import pickle
 import shutil
 import sentry_sdk
+from amrsummary import before_send
 from automator_settings import SENTRY_DSN
 from externalretrieve import upload_to_ftp
 from automator_settings import FTP_USERNAME, FTP_PASSWORD
@@ -16,7 +17,7 @@ from automator_settings import FTP_USERNAME, FTP_PASSWORD
 @click.option('--work_dir', help='Path to Redmine issue work directory')
 @click.option('--description', help='Path to pickled Redmine description')
 def reportretrieve_redmine(redmine_instance, issue, work_dir, description):
-    sentry_sdk.init(SENTRY_DSN)
+    sentry_sdk.init(SENTRY_DSN, before_send=before_send)
     print('External retrieving!')
     # Unpickle Redmine objects
     redmine_instance = pickle.load(open(redmine_instance, 'rb'))

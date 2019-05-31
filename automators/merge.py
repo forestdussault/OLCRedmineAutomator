@@ -6,6 +6,7 @@ import shutil
 import pandas as pd
 from pandas import ExcelWriter
 import sentry_sdk
+from amrsummary import before_send
 from automator_settings import SENTRY_DSN
 from nastools.nastools import retrieve_nas_files
 from automator_settings import COWBAT_IMAGE, COWBAT_DATABASES
@@ -17,8 +18,8 @@ from automator_settings import COWBAT_IMAGE, COWBAT_DATABASES
 @click.option('--work_dir', help='Path to Redmine issue work directory')
 @click.option('--description', help='Path to pickled Redmine description')
 def merge_redmine(redmine_instance, issue, work_dir, description):
-    sentry_sdk.init(SENTRY_DSN)
     # Unpickle Redmine objects
+    sentry_sdk.init(SENTRY_DSN, before_send=before_send)
     redmine_instance = pickle.load(open(redmine_instance, 'rb'))
     issue = pickle.load(open(issue, 'rb'))
     description = pickle.load(open(description, 'rb'))

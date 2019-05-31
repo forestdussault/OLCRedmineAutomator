@@ -5,6 +5,7 @@ import pickle
 import shutil
 import sentry_sdk
 from automator_settings import SENTRY_DSN
+from amrsummary import before_send
 from nastools.nastools import retrieve_nas_files
 from externalretrieve import upload_to_ftp, check_fastas_present
 
@@ -14,7 +15,7 @@ from externalretrieve import upload_to_ftp, check_fastas_present
 @click.option('--work_dir', help='Path to Redmine issue work directory')
 @click.option('--description', help='Path to pickled Redmine description')
 def psortb_redmine(redmine_instance, issue, work_dir, description):
-    sentry_sdk.init(SENTRY_DSN)
+    sentry_sdk.init(SENTRY_DSN, before_send=before_send)
     try:
         # Unpickle Redmine objects
         redmine_instance = pickle.load(open(redmine_instance, 'rb'))

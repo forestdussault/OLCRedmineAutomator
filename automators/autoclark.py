@@ -3,6 +3,7 @@ import glob
 import click
 import pickle
 import sentry_sdk
+from amrsummary import before_send
 from automator_settings import SENTRY_DSN
 from nastools.nastools import retrieve_nas_files
 
@@ -12,7 +13,7 @@ from nastools.nastools import retrieve_nas_files
 @click.option('--work_dir', help='Path to Redmine issue work directory')
 @click.option('--description', help='Path to pickled Redmine description')
 def clark_redmine(redmine_instance, issue, work_dir, description):
-    sentry_sdk.init(SENTRY_DSN)
+    sentry_sdk.init(SENTRY_DSN, before_send=before_send)
     # Unpickle Redmine objects
     redmine_instance = pickle.load(open(redmine_instance, 'rb'))
     issue = pickle.load(open(issue, 'rb'))

@@ -6,6 +6,7 @@ import shutil
 import zipfile
 import sentry_sdk
 from automator_settings import SENTRY_DSN
+from amrsummary import before_send
 from biotools import mash
 from externalretrieve import upload_to_ftp
 from nastools.nastools import retrieve_nas_files
@@ -17,7 +18,7 @@ from nastools.nastools import retrieve_nas_files
 @click.option('--work_dir', help='Path to Redmine issue work directory')
 @click.option('--description', help='Path to pickled Redmine description')
 def cowsnphr_redmine(redmine_instance, issue, work_dir, description):
-    sentry_sdk.init(SENTRY_DSN)
+    sentry_sdk.init(SENTRY_DSN, before_send=before_send)
     try:
         # Unpickle Redmine objects
         redmine_instance = pickle.load(open(redmine_instance, 'rb'))
