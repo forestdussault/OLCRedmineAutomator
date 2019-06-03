@@ -279,7 +279,7 @@ def pointfinder_redmine(redmine_instance, issue, work_dir, description):
     activate = 'source /home/ubuntu/miniconda3/bin/activate /mnt/nas2/virtual_environments/pointfinder'
     pointfinder_py = '/mnt/nas2/virtual_environments/pointfinder/pointfinder-3.0/pointfinder-3.0.py'
     # Database locations
-    pointfinder_db = '/mnt/scratch/12900/pointfinder_db'
+    pointfinder_db = '/mnt/nas2/databases/assemblydatabases/0.3.4/pointfinder'
     # List of organisms in the pointfinder database
     pointfinder_list = ['campylobacter', 'e.coli', 'tuberculosis', 'gonorrhoeae', 'salmonella']
     try:

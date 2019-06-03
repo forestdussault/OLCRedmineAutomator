@@ -185,10 +185,12 @@ def monitor_issues(redmine, issue_dict, timeout):
                     logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
                 else:
                     all_complete = False
-            elif issue_subject == 'pointfinder':
-                # Figure out files expected once pointfinder gets fixed.
-                # Also validate that report has correct stuff
-                pass
+            elif issue_subject == 'pointfinder' and issues_validated[issue_subject] == 'Unknown':
+                if issue.status.id == 4:
+                    issues_validated[issue_subject] = validate_attachments(issue, 'pointfinder_output.zip')
+                    logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
+                else:
+                    all_complete = False
             elif issue_subject == 'prokka' and issues_validated[issue_subject] == 'Unknown':
                 if issue.status.id == 4:
                     issues_validated[issue_subject] = validate_ftp_upload('prokka_output_{}.zip'.format(issue.id))
