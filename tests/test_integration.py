@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from validator_helper import validate
 from redminelib import Redmine
 import urllib.request
 import sentry_sdk
@@ -84,7 +85,19 @@ def create_test_issues(redmine):
     return issues_created
 
 
-def validate_attachments(issue, file_to_find):
+def validate_csv_content(query_csv, ref_csv):
+    column_list = validate.find_all_columns(csv_file=ref_csv, range_fraction=0.05)
+    validator = validate.Validator(reference_csv=ref_csv,
+                                   test_csv=query_csv,
+                                   column_list=column_list,
+                                   identifying_column='Strain')
+    if validator.same_columns_in_ref_and_test() and validator.all_test_columns_in_ref_and_test() and validator.check_samples_present() and validator.check_columns_match():
+        return True
+    else:
+        return False
+
+
+def validate_attachments(issue, file_to_find, validate_content=False):
     validation_status = 'Unknown'
     if len(issue.attachments) > 0:
         attachment_found = False
@@ -94,7 +107,13 @@ def validate_attachments(issue, file_to_find):
                 with tempfile.TemporaryDirectory() as tmpdir:
                     attachment.download(savepath=tmpdir, filename=file_to_find)
                     if os.path.getsize(os.path.join(tmpdir, file_to_find)) > 0:
-                        validation_status = 'Validated'
+                        if validate_content is True:
+                            content_ok = validate_csv_content(query_csv=os.path.join(tmpdir, file_to_find),
+                                                              ref_csv=os.path.join('tests/ref_csvs/{}.csv'.format(issue.subject)))
+                            if content_ok is True:
+                                validation_status = 'Validated'
+                            else:
+                                validation_status = 'Reference content does not match query.'
                     else:
                         validation_status = 'Uploaded file has zero size.'
         if attachment_found is False:
@@ -104,12 +123,12 @@ def validate_attachments(issue, file_to_find):
     return validation_status
 
 
-def validate_ftp_upload(ftp_file):
+def validate_ftp_upload(ftp_file, min_file_size=0):
     try:
         with tempfile.TemporaryDirectory() as tmpdir:
             urllib.request.urlretrieve(os.path.join(OUTGOING_FTP, ftp_file),
                                        os.path.join(tmpdir, ftp_file))
-            if os.path.getsize(os.path.join(tmpdir, ftp_file)) > 0:
+            if os.path.getsize(os.path.join(tmpdir, ftp_file)) > min_file_size:
                 validation_status = 'Validated'
             else:
                 validation_status = 'Uploaded file has zero size.'
@@ -143,71 +162,97 @@ def monitor_issues(redmine, issue_dict, timeout):
             issue_id = issue_dict[issue_subject]
             issue = redmine.issue.get(issue_id, include=['attachments'])
 
+            # AMR Summary #####
             if issue_subject == 'amrsummary' and issues_validated[issue_subject] == 'Unknown':
                 if issue.status.id == 4:  # 4 corresponds to issue being complete.
-                    issues_validated[issue_subject] = validate_attachments(issue, 'amr_summary.csv')
+                    issues_validated[issue_subject] = validate_attachments(issue, 'amr_summary.csv',
+                                                                           validate_content=True)
                     logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
                 else:  # If hasn't finished yet, just wait!
                     all_complete = False
 
+            # CLARK #####
             elif issue_subject == 'autoclark' and issues_validated[issue_subject] == 'Unknown':
                 if issue.status.id == 4:
+                    # TODO: Validate xlsx files?
                     issues_validated[issue_subject] = validate_attachments(issue, 'abundance.xlsx')
                     logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
                 else:
                     all_complete = False
+
+            # ECGF #####
             elif issue_subject == 'ecgf' and issues_validated[issue_subject] == 'Unknown':
                 if issue.status.id == 4:
                     issues_validated[issue_subject] = validate_attachments(issue, 'eCGF_output_{}.zip'.format(issue.id))
                     logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
                 else:
                     all_complete = False
+
+            # EC TYPER #####
             elif issue_subject == 'ec_typer' and issues_validated[issue_subject] == 'Unknown':
                 if issue.status.id == 4:
                     issues_validated[issue_subject] = validate_attachments(issue, 'ec_typer_report.tsv')
                     logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
                 else:
                     all_complete = False
+
+            # EXTERNAL RETRIEVE #####
             elif issue_subject == 'externalretrieve' and issues_validated[issue_subject] == 'Unknown':
                 if issue.status.id == 4:
-                    issues_validated[issue_subject] = validate_ftp_upload('{}.zip'.format(issue.id))
+                    issues_validated[issue_subject] = validate_ftp_upload('{}.zip'.format(issue.id),
+                                                                          min_file_size=1000)
                 else:
                     all_complete = False
+
+            # DIVERSITREE #####
             elif issue_subject == 'diversitree' and issues_validated[issue_subject] == 'Unknown':
                 if issue.status.id == 4:
                     issues_validated[issue_subject] = validate_attachments(issue, 'diversitree_report.html')
                     logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
                 else:
                     all_complete = False
+
+            # GENESEEKR #####
             elif issue_subject == 'geneseekr' and issues_validated[issue_subject] == 'Unknown':
                 if issue.status.id == 4:
                     issues_validated[issue_subject] = validate_attachments(issue, 'geneseekr_output.zip')
                     logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
                 else:
                     all_complete = False
+
+            # POINTFINDER #####
             elif issue_subject == 'pointfinder' and issues_validated[issue_subject] == 'Unknown':
                 if issue.status.id == 4:
                     issues_validated[issue_subject] = validate_attachments(issue, 'pointfinder_output.zip')
                     logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
                 else:
                     all_complete = False
+
+            # PROKKA #####
             elif issue_subject == 'prokka' and issues_validated[issue_subject] == 'Unknown':
                 if issue.status.id == 4:
-                    issues_validated[issue_subject] = validate_ftp_upload('prokka_output_{}.zip'.format(issue.id))
+                    issues_validated[issue_subject] = validate_ftp_upload('prokka_output_{}.zip'.format(issue.id),
+                                                                          min_file_size=1000)
                 else:
                     all_complete = False
+
+            # RESFINDER #####
             elif issue_subject == 'resfinder' and issues_validated[issue_subject] == 'Unknown':
                 if issue.status.id == 4:
                     issues_validated[issue_subject] = validate_attachments(issue, 'resfinder_blastn.xlsx')
                     logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
                 else:
                     all_complete = False
+
+            # SIPPRVERSE #####
             elif issue_subject == 'sipprverse' and issues_validated[issue_subject] == 'Unknown':
                 if issue.status.id == 4:
                     issues_validated[issue_subject] = validate_attachments(issue, 'sipprverse_output.zip')
                     logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
                 else:
                     all_complete = False
+
+            # STARAMR #####
             elif issue_subject == 'staramr' and issues_validated[issue_subject] == 'Unknown':
                 if issue.status.id == 4:
                     issues_validated[issue_subject] = validate_attachments(issue, 'staramr_output.zip')
@@ -230,6 +275,11 @@ if __name__ == '__main__':
                         type=str,
                         required=True,
                         help='API Key for Redmine dev environment.')
+    parser.add_argument('-l', '--long_test',
+                        default=False,
+                        action='store_true',
+                        help='Activate this flag to do a longer test that includes automators that take a few '
+                             'hours to run (NOT ACTUALLY IMPLEMENTED YET).')
     args = parser.parse_args()
     sentry_dsn = args.sentry_dsn
     api_key = args.api_key
@@ -260,13 +310,19 @@ if __name__ == '__main__':
     ResFinder
     sipprverse
     staramr
+    
+    Automators that take a long time (roughly 1 hour or more) to run and will only go when the --long
+    flag is passed as an argument:
+    cowsnphr
+    snvphyl
+    
     """
 
     issues_created = create_test_issues(redmine)
 
     issues_validated = monitor_issues(redmine=redmine,
                                       issue_dict=issues_created,
-                                      timeout=600)
+                                      timeout=3600)
     for issue_subject in issues_validated:
         if issues_validated[issue_subject] != 'Validated':
             sentry_sdk.capture_message('Redmine validation failing - automator {} with id '
