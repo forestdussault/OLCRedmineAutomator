@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
 from redminelib import Redmine
+import urllib.request
+import sentry_sdk
+import argparse
 import tempfile
 import logging
 import time
@@ -12,6 +15,7 @@ Test script to make sure that adding an automator/changing some dependency somew
 
 DEV_REDMINE_URL = 'http://192.168.1.2:8080'
 REDMINE_PROJECT = 'test'
+OUTGOING_FTP = 'ftp://ftp.agr.gc.ca/outgoing/cfia-ak'
 
 
 def create_issue(redmine_instance, subject, description, attachments=None):
@@ -60,7 +64,7 @@ def create_test_issues(redmine):
                                                  description='2\n2014-SEQ-0275\n2014-SEQ-0276\n2014-SEQ-0277\n2014-SEQ-0278')
     issues_created['geneseekr'] = create_issue(redmine_instance=redmine,
                                                subject='geneseekr',
-                                               description='analysis=mlst\n2014-SEQ-0276')
+                                               description='analysis=sixteens\n2014-SEQ-0276')
     issues_created['pointfinder'] = create_issue(redmine_instance=redmine,
                                                  subject='pointfinder',
                                                  description='2014-SEQ-0276')
@@ -97,6 +101,20 @@ def validate_attachments(issue, file_to_find):
             validation_status = 'Could not find {}'.format(file_to_find)
     else:
         validation_status = 'No attachments, validation failed.'
+    return validation_status
+
+
+def validate_ftp_upload(ftp_file):
+    try:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            urllib.request.urlretrieve(os.path.join(OUTGOING_FTP, ftp_file),
+                                       os.path.join(tmpdir, ftp_file))
+            if os.path.getsize(os.path.join(tmpdir, ftp_file)) > 0:
+                validation_status = 'Validated'
+            else:
+                validation_status = 'Uploaded file has zero size.'
+    except:  # If file doesn't exist, something went wrong. Set validation status accordingly.
+        validation_status = 'No uploaded file found on FTP'
     return validation_status
 
 
@@ -150,26 +168,32 @@ def monitor_issues(redmine, issue_dict, timeout):
                     logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
                 else:
                     all_complete = False
-            elif issue_subject == 'externalretrieve':
-                # Check for ISSUEID.zip on outgoing FTP (or just parse updates for that address)
-                pass
+            elif issue_subject == 'externalretrieve' and issues_validated[issue_subject] == 'Unknown':
+                if issue.status.id == 4:
+                    issues_validated[issue_subject] = validate_ftp_upload('{}.zip'.format(issue.id))
+                else:
+                    all_complete = False
             elif issue_subject == 'diversitree' and issues_validated[issue_subject] == 'Unknown':
                 if issue.status.id == 4:
                     issues_validated[issue_subject] = validate_attachments(issue, 'diversitree_report.html')
                     logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
                 else:
                     all_complete = False
-            elif issue_subject == 'geneseekr':
-                # Check for ??? (geneseekr_blastn I think)
-                # Also validate that report has correct stuff
-                pass
+            elif issue_subject == 'geneseekr' and issues_validated[issue_subject] == 'Unknown':
+                if issue.status.id == 4:
+                    issues_validated[issue_subject] = validate_attachments(issue, 'geneseekr_output.zip')
+                    logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
+                else:
+                    all_complete = False
             elif issue_subject == 'pointfinder':
                 # Figure out files expected once pointfinder gets fixed.
                 # Also validate that report has correct stuff
                 pass
-            elif issue_subject == 'prokka':
-                # Check for prokka_output_ISSUEID.zip on outgoing FTP
-                pass
+            elif issue_subject == 'prokka' and issues_validated[issue_subject] == 'Unknown':
+                if issue.status.id == 4:
+                    issues_validated[issue_subject] = validate_ftp_upload('prokka_output_{}.zip'.format(issue.id))
+                else:
+                    all_complete = False
             elif issue_subject == 'resfinder' and issues_validated[issue_subject] == 'Unknown':
                 if issue.status.id == 4:
                     issues_validated[issue_subject] = validate_attachments(issue, 'resfinder_blastn.xlsx')
@@ -195,10 +219,22 @@ def monitor_issues(redmine, issue_dict, timeout):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-s', '--sentry_dsn',
+                        type=str,
+                        required=True,
+                        help='DSN for sentry. Can be made if you sign up at sentry.io and create a python project.')
+    parser.add_argument('-k', '--api_key',
+                        type=str,
+                        required=True,
+                        help='API Key for Redmine dev environment.')
+    args = parser.parse_args()
+    sentry_dsn = args.sentry_dsn
+    api_key = args.api_key
+    sentry_sdk.init(sentry_dsn)
     logging.basicConfig(format='\033[92m \033[1m %(asctime)s \033[0m %(message)s ',
                         level=logging.INFO,
                         datefmt='%Y-%m-%d %H:%M:%S')
-    api_key = input('Enter API Key for redmine dev: ')
     redmine = Redmine(DEV_REDMINE_URL,
                       key=api_key,
                       requests={
@@ -230,5 +266,10 @@ if __name__ == '__main__':
                                       issue_dict=issues_created,
                                       timeout=600)
     for issue_subject in issues_validated:
+        if issues_validated[issue_subject] != 'Validated':
+            sentry_sdk.capture_message('Redmine validation failing - automator {} with id '
+                                       '{} had status {}'.format(issue_subject,
+                                                                 issues_created[issue_subject],
+                                                                 issues_validated[issue_subject]))
         print('{}: {}'.format(issue_subject, issues_validated[issue_subject]))
 
