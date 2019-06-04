@@ -86,7 +86,7 @@ def create_test_issues(redmine):
 
 
 def validate_csv_content(query_csv, ref_csv):
-    column_list = validate.find_all_columns(csv_file=ref_csv, range_fraction=0.05)
+    column_list = validate.find_all_columns(csv_file=ref_csv, columns_to_exclude=[], range_fraction=0.05)
     validator = validate.Validator(reference_csv=ref_csv,
                                    test_csv=query_csv,
                                    column_list=column_list,
@@ -108,12 +108,15 @@ def validate_attachments(issue, file_to_find, validate_content=False):
                     attachment.download(savepath=tmpdir, filename=file_to_find)
                     if os.path.getsize(os.path.join(tmpdir, file_to_find)) > 0:
                         if validate_content is True:
+                            ref_csv = 'tests/ref_csvs/{}'.format(file_to_find)
                             content_ok = validate_csv_content(query_csv=os.path.join(tmpdir, file_to_find),
-                                                              ref_csv=os.path.join('tests/ref_csvs/{}.csv'.format(issue.subject)))
+                                                              ref_csv=ref_csv)
                             if content_ok is True:
                                 validation_status = 'Validated'
                             else:
                                 validation_status = 'Reference content does not match query.'
+                        else:
+                                validation_status = 'Validated'
                     else:
                         validation_status = 'Uploaded file has zero size.'
         if attachment_found is False:
