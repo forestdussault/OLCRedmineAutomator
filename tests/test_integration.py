@@ -4,9 +4,11 @@ from validator_helper import validate
 from redminelib import Redmine
 import urllib.request
 import sentry_sdk
+import hashlib
 import argparse
 import tempfile
 import logging
+import zipfile
 import time
 import os
 
@@ -86,7 +88,10 @@ def create_test_issues(redmine):
 
 
 def validate_csv_content(query_csv, ref_csv):
-    column_list = validate.find_all_columns(csv_file=ref_csv, columns_to_exclude=[], range_fraction=0.05)
+    if query_csv.endswith('.tsv'):
+        column_list = validate.find_all_columns(csv_file=ref_csv, columns_to_exclude=[], range_fraction=0.05, separator='\t')
+    else:
+        column_list = validate.find_all_columns(csv_file=ref_csv, columns_to_exclude=[], range_fraction=0.05, separator='\t')
     validator = validate.Validator(reference_csv=ref_csv,
                                    test_csv=query_csv,
                                    column_list=column_list,
@@ -109,8 +114,7 @@ def validate_attachments(issue, file_to_find, validate_content=False):
                     if os.path.getsize(os.path.join(tmpdir, file_to_find)) > 0:
                         if validate_content is True:
                             ref_csv = 'tests/ref_csvs/{}'.format(file_to_find)
-                            content_ok = validate_csv_content(query_csv=os.path.join(tmpdir, file_to_find),
-                                                              ref_csv=ref_csv)
+
                             if content_ok is True:
                                 validation_status = 'Validated'
                             else:
@@ -121,6 +125,50 @@ def validate_attachments(issue, file_to_find, validate_content=False):
                         validation_status = 'Uploaded file has zero size.'
         if attachment_found is False:
             validation_status = 'Could not find {}'.format(file_to_find)
+    else:
+        validation_status = 'No attachments, validation failed.'
+    return validation_status
+
+
+def md5(fname):
+    """
+    Gets MD5sum for a file - use for quick and dirty comparisons of files.
+    Hooray for stackoverflow: https://stackoverflow.com/questions/3431825/generating-an-md5-checksum-of-a-file
+    """
+    hash_md5 = hashlib.md5()
+    with open(fname, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
+
+
+def validate_csv_in_zip(issue, zip_file, report_file, ref_csv):
+    """
+    Crude validation that checks that CSV contents are the exact same between some folder in a zip
+    file and a reference that we keep on hand.
+    :param issue:
+    :param zip_file:
+    :param report_file:
+    :param ref_csv:
+    :return:
+    """
+    validation_status = 'Unknown'
+    if len(issue.attachments) > 0:
+        attachment_found = False
+        for attachment in issue.attachments:
+            if attachment.filename == zip_file:
+                attachment_found = True
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    downloaded_zip = os.path.join(tmpdir, zip_file)
+                    attachment.download(savepath=tmpdir, filename=zip_file)
+                    zipped_archive = zipfile.ZipFile(downloaded_zip)
+                    zipped_archive.extractall(path=tmpdir)
+                    if md5(ref_csv) == md5(os.path.join(tmpdir, report_file)):
+                        validation_status = 'Validated'
+                    else:
+                        validation_status = 'Contents not identical. Check on what changed.'
+        if attachment_found is False:
+            validation_status = 'Could not find {}'.format(zip_file)
     else:
         validation_status = 'No attachments, validation failed.'
     return validation_status
@@ -186,7 +234,10 @@ def monitor_issues(redmine, issue_dict, timeout):
             # ECGF #####
             elif issue_subject == 'ecgf' and issues_validated[issue_subject] == 'Unknown':
                 if issue.status.id == 4:
-                    issues_validated[issue_subject] = validate_attachments(issue, 'eCGF_output_{}.zip'.format(issue.id))
+                    issues_validated[issue_subject] = validate_csv_in_zip(issue=issue,
+                                                                          zip_file='eCGF_output_{}.zip'.format(issue.id),
+                                                                          report_file='{}_summary_report.csv'.format(issue.id),
+                                                                          ref_csv='/mnt/nas2/redmine/applications/OLCRedmineAutomator/tests/test_integration/ref_csvs/124_summary_report.csv')  # Hardcoded paths stink, fix me!
                     logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
                 else:
                     all_complete = False
@@ -194,7 +245,8 @@ def monitor_issues(redmine, issue_dict, timeout):
             # EC TYPER #####
             elif issue_subject == 'ec_typer' and issues_validated[issue_subject] == 'Unknown':
                 if issue.status.id == 4:
-                    issues_validated[issue_subject] = validate_attachments(issue, 'ec_typer_report.tsv')
+                    issues_validated[issue_subject] = validate_attachments(issue, 'ec_typer_report.tsv',
+                                                                           validate_content=True)
                     logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
                 else:
                     all_complete = False
@@ -210,6 +262,7 @@ def monitor_issues(redmine, issue_dict, timeout):
             # DIVERSITREE #####
             elif issue_subject == 'diversitree' and issues_validated[issue_subject] == 'Unknown':
                 if issue.status.id == 4:
+                    # TODO: HTML validation - should just be able to md5sum or something on file contents.
                     issues_validated[issue_subject] = validate_attachments(issue, 'diversitree_report.html')
                     logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
                 else:
@@ -218,7 +271,10 @@ def monitor_issues(redmine, issue_dict, timeout):
             # GENESEEKR #####
             elif issue_subject == 'geneseekr' and issues_validated[issue_subject] == 'Unknown':
                 if issue.status.id == 4:
-                    issues_validated[issue_subject] = validate_attachments(issue, 'geneseekr_output.zip')
+                    issues_validated[issue_subject] = validate_csv_in_zip(issue=issue,
+                                                                          zip_file='geneseekr_output.zip',
+                                                                          report_file='2014-SEQ-0276_blastn_sixteens_full.tsv',
+                                                                          ref_csv='/mnt/nas2/redmine/applications/OLCRedmineAutomator/tests/test_integration/ref_csvs/2014-SEQ-0276_blastn_sixteens_full.tsv')  # Hardcoded paths stink, fix me!
                     logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
                 else:
                     all_complete = False
@@ -226,7 +282,10 @@ def monitor_issues(redmine, issue_dict, timeout):
             # POINTFINDER #####
             elif issue_subject == 'pointfinder' and issues_validated[issue_subject] == 'Unknown':
                 if issue.status.id == 4:
-                    issues_validated[issue_subject] = validate_attachments(issue, 'pointfinder_output.zip')
+                    issues_validated[issue_subject] = validate_csv_in_zip(issue=issue,
+                                                                          zip_file='pointfinder_output.zip',
+                                                                          report_file='PointFinder_results_summary.csv',
+                                                                          ref_csv='/mnt/nas2/redmine/applications/OLCRedmineAutomator/tests/test_integration/ref_csvs/PointFinder_results_summary.csv')  # Hardcoded paths stink, fix me!
                     logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
                 else:
                     all_complete = False
@@ -250,7 +309,10 @@ def monitor_issues(redmine, issue_dict, timeout):
             # SIPPRVERSE #####
             elif issue_subject == 'sipprverse' and issues_validated[issue_subject] == 'Unknown':
                 if issue.status.id == 4:
-                    issues_validated[issue_subject] = validate_attachments(issue, 'sipprverse_output.zip')
+                    issues_validated[issue_subject] = validate_csv_in_zip(issue=issue,
+                                                                          zip_file='sipprverse_output.zip',
+                                                                          report_file='mlst.csv',
+                                                                          ref_csv='/mnt/nas2/redmine/applications/OLCRedmineAutomator/tests/test_integration/ref_csvs/mlst.csv')  # Hardcoded paths stink, fix me!
                     logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
                 else:
                     all_complete = False
@@ -258,7 +320,10 @@ def monitor_issues(redmine, issue_dict, timeout):
             # STARAMR #####
             elif issue_subject == 'staramr' and issues_validated[issue_subject] == 'Unknown':
                 if issue.status.id == 4:
-                    issues_validated[issue_subject] = validate_attachments(issue, 'staramr_output.zip')
+                    issues_validated[issue_subject] = validate_csv_in_zip(issue=issue,
+                                                                          zip_file='staramr_output.zip',
+                                                                          report_file='summary.tsv',
+                                                                          ref_csv='/mnt/nas2/redmine/applications/OLCRedmineAutomator/tests/test_integration/ref_csvs/summary.tsv')  # Hardcoded paths stink, fix me!
                     logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
                 else:
                     all_complete = False
