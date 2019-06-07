@@ -114,7 +114,8 @@ def validate_attachments(issue, file_to_find, validate_content=False):
                     if os.path.getsize(os.path.join(tmpdir, file_to_find)) > 0:
                         if validate_content is True:
                             ref_csv = 'tests/ref_csvs/{}'.format(file_to_find)
-
+                            content_ok = validate_csv_content(query_csv=os.path.join(tmpdir, file_to_find),
+                                                              ref_csv='tests/ref_csvs/{}'.format(file_to_find))
                             if content_ok is True:
                                 validation_status = 'Validated'
                             else:
@@ -237,7 +238,7 @@ def monitor_issues(redmine, issue_dict, timeout):
                     issues_validated[issue_subject] = validate_csv_in_zip(issue=issue,
                                                                           zip_file='eCGF_output_{}.zip'.format(issue.id),
                                                                           report_file='{}_summary_report.csv'.format(issue.id),
-                                                                          ref_csv='/mnt/nas2/redmine/applications/OLCRedmineAutomator/tests/test_integration/ref_csvs/124_summary_report.csv')  # Hardcoded paths stink, fix me!
+                                                                          ref_csv='/mnt/nas2/redmine/applications/OLCRedmineAutomator/tests/ref_csvs/124_summary_report.csv')  # Hardcoded paths stink, fix me!
                     logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
                 else:
                     all_complete = False
@@ -274,7 +275,7 @@ def monitor_issues(redmine, issue_dict, timeout):
                     issues_validated[issue_subject] = validate_csv_in_zip(issue=issue,
                                                                           zip_file='geneseekr_output.zip',
                                                                           report_file='2014-SEQ-0276_blastn_sixteens_full.tsv',
-                                                                          ref_csv='/mnt/nas2/redmine/applications/OLCRedmineAutomator/tests/test_integration/ref_csvs/2014-SEQ-0276_blastn_sixteens_full.tsv')  # Hardcoded paths stink, fix me!
+                                                                          ref_csv='/mnt/nas2/redmine/applications/OLCRedmineAutomator/tests/ref_csvs/2014-SEQ-0276_blastn_sixteens_full.tsv')  # Hardcoded paths stink, fix me!
                     logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
                 else:
                     all_complete = False
@@ -285,7 +286,7 @@ def monitor_issues(redmine, issue_dict, timeout):
                     issues_validated[issue_subject] = validate_csv_in_zip(issue=issue,
                                                                           zip_file='pointfinder_output.zip',
                                                                           report_file='PointFinder_results_summary.csv',
-                                                                          ref_csv='/mnt/nas2/redmine/applications/OLCRedmineAutomator/tests/test_integration/ref_csvs/PointFinder_results_summary.csv')  # Hardcoded paths stink, fix me!
+                                                                          ref_csv='/mnt/nas2/redmine/applications/OLCRedmineAutomator/tests/ref_csvs/PointFinder_results_summary.csv')  # Hardcoded paths stink, fix me!
                     logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
                 else:
                     all_complete = False
@@ -312,7 +313,7 @@ def monitor_issues(redmine, issue_dict, timeout):
                     issues_validated[issue_subject] = validate_csv_in_zip(issue=issue,
                                                                           zip_file='sipprverse_output.zip',
                                                                           report_file='mlst.csv',
-                                                                          ref_csv='/mnt/nas2/redmine/applications/OLCRedmineAutomator/tests/test_integration/ref_csvs/mlst.csv')  # Hardcoded paths stink, fix me!
+                                                                          ref_csv='/mnt/nas2/redmine/applications/OLCRedmineAutomator/tests/ref_csvs/mlst.csv')  # Hardcoded paths stink, fix me!
                     logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
                 else:
                     all_complete = False
@@ -323,7 +324,7 @@ def monitor_issues(redmine, issue_dict, timeout):
                     issues_validated[issue_subject] = validate_csv_in_zip(issue=issue,
                                                                           zip_file='staramr_output.zip',
                                                                           report_file='summary.tsv',
-                                                                          ref_csv='/mnt/nas2/redmine/applications/OLCRedmineAutomator/tests/test_integration/ref_csvs/summary.tsv')  # Hardcoded paths stink, fix me!
+                                                                          ref_csv='/mnt/nas2/redmine/applications/OLCRedmineAutomator/tests/ref_csvs/summary.tsv')  # Hardcoded paths stink, fix me!
                     logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
                 else:
                     all_complete = False
