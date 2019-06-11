@@ -90,7 +90,9 @@ def diversitree_redmine(redmine_instance, issue, work_dir, description):
                 os.makedirs(os.path.join(work_dir, 'output'))
             cmd = '/home/ubuntu/bin/mashtree --numcpus 24 --outtree {output_newick} {input_fastas}'.format(output_newick=os.path.join(work_dir, 'output', 'parsnp.tree'),
                                                                                    input_fastas=os.path.join(work_dir, 'fastas', '*.fasta'))
-        subprocess.call(cmd, shell=True, env={'PERL5LIB': '$PERL5LIB:/home/ubuntu/lib/perl5'})
+        returncode = subprocess.call(cmd, shell=True, env={'PERL5LIB': '$PERL5LIB:/home/ubuntu/lib/perl5'})
+        if returncode != 0:
+            raise Exception('Tree creation command ({}) for {} had return code {}'.format(cmd, issue.id, returncode))
         # Now use diversitree to pick the strains we actually want.
         # IMPORTANT NOTE TO ANYONE MAINTAINING THIS: Need to have xvfb installed on nodes in order to make this run.
         # StrainChoosr uses ete3 to draw trees, which uses PyQt, which needs some sort of display.
@@ -98,7 +100,9 @@ def diversitree_redmine(redmine_instance, issue, work_dir, description):
               '--output_name {output}'.format(tree=os.path.join(work_dir, 'output', 'parsnp.tree'),
                                               number=desired_num_strains,
                                               output=os.path.join(work_dir, 'diversitree_report'))
-        subprocess.call(cmd, shell=True)
+        returncode = subprocess.call(cmd, shell=True)
+        if returncode != 0:
+            raise Exception('StrainChoosr command ({}) for {} had return code {}'.format(cmd, issue.id, returncode))
         output_list = list()
         output_dict = dict()
         output_dict['path'] = os.path.join(work_dir, 'output', 'parsnp.tree')
