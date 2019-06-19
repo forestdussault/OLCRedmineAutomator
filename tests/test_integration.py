@@ -91,7 +91,12 @@ def validate_csv_content(query_csv, ref_csv):
     if query_csv.endswith('.tsv'):
         column_list = validate.find_all_columns(csv_file=ref_csv, columns_to_exclude=[], range_fraction=0.05, separator='\t')
     else:
-        column_list = validate.find_all_columns(csv_file=ref_csv, columns_to_exclude=[], range_fraction=0.05, separator='\t')
+        column_list = validate.find_all_columns(csv_file=ref_csv, columns_to_exclude=[], range_fraction=0.05)
+    if 'ec_typer_report.tsv' in ref_csv:  # EC typer report doesn't play nicely with validator helper, so just take an md5sum
+        if md5(ref_csv) == md5(query_csv):
+            return True
+        else:
+            return False
     validator = validate.Validator(reference_csv=ref_csv,
                                    test_csv=query_csv,
                                    column_list=column_list,
@@ -323,7 +328,7 @@ def monitor_issues(redmine, issue_dict, timeout):
                 if issue.status.id == 4:
                     issues_validated[issue_subject] = validate_csv_in_zip(issue=issue,
                                                                           zip_file='staramr_output.zip',
-                                                                          report_file='summary.tsv',
+                                                                          report_file='salmonella/summary.tsv',
                                                                           ref_csv='/mnt/nas2/redmine/applications/OLCRedmineAutomator/tests/ref_csvs/summary.tsv')  # Hardcoded paths stink, fix me!
                     logging.info('{} is complete, status is {}'.format(issue_subject, issues_validated[issue_subject]))
                 else:
