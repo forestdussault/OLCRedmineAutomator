@@ -32,6 +32,8 @@ A note on Sample IDs:
 LSTS ID should be parsed from SampleSheet.csv by the COWBAT pipeline, and is available within the combinedMetadata.csv
 file. The LSTS ID is available under the 'SampleName' column in combinedMetadata.csv
 
+If you've gotten a message that something is wrong but you have a good reason to go ahead and make the report, add a 
+line at the end of the description that says FORCE in order to make the automator make the report anyways.
 
 """
 
@@ -46,8 +48,8 @@ lab_info = {
 }
 
 # User level security to ensure only permitted users can submit AutoROGA requests
-# Permitted users - Andrew, Adam, Julie, Cathy, Paul, Martine.
-permitted_users = [296, 106, 429, 225, 226, 448]
+# Permitted users - Andrew, Adam, Julie, Cathy, Paul, Martine, Ray.
+permitted_users = [296, 106, 429, 225, 226, 448, 529]
 
 @click.command()
 @click.option('--redmine_instance', help='Path to pickled Redmine API instance')
