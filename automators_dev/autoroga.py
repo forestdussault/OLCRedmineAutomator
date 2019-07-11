@@ -74,9 +74,13 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
 
     # Amendment functionality
     amendment_flag = False
+    force_flag = False
     amendment_check = description[0].upper()
     if 'AMENDMENT' in amendment_check:
         amendment_flag = True
+    if 'FORCE' in description[-1].upper():
+        force_flag = True
+        description.pop()
 
     # Parse fields
     if amendment_flag is False:
@@ -159,7 +163,7 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
 
         # Parse Seq IDs
         try:
-            seqids, lstsids = parse_seqid_list(description)
+            seqids, lstsids = parse_seqid_list(description, starting_row=4)
         except:
             redmine_instance.issue.update(resource_id=issue.id, status_id=4,
                                           notes='ERROR: Could not pair Seq IDs and LSTS IDs from the provided '
@@ -191,24 +195,28 @@ def redmine_roga(redmine_instance, issue, work_dir, description):
         quit()
 
     # GENERATE REPORT
-    pdf_file = generate_roga(seq_lsts_dict=seq_lsts_dict,
-                             genus=genus,
-                             lab=lab,
-                             source=source,
-                             work_dir=work_dir,
-                             amendment_flag=amendment_flag,
-                             amended_id=amended_report_id)
+    pdf_file, idiot_proof = generate_roga(seq_lsts_dict=seq_lsts_dict,
+                                          genus=genus,
+                                          lab=lab,
+                                          source=source,
+                                          work_dir=work_dir,
+                                          amendment_flag=amendment_flag,
+                                          amended_id=amended_report_id)
+    if len(idiot_proof) > 0 and force_flag is False:
+        redmine_instance.issue.update(resource_id=issue.id, status_id=4,
+                                      notes='The following issues were found while creating the report:\n\n{}\n\nIf you really want to make '
+                                            'this ROGA, add the FORCEFLAG!'.format('\n'.join(idiot_proof)))
+    else:
+        # Output list containing dictionaries with file path as the key for upload to Redmine
+        output_list = [
+            {
+                'path': os.path.join(work_dir, pdf_file),
+                'filename': os.path.basename(pdf_file)
+            }
+        ]
 
-    # Output list containing dictionaries with file path as the key for upload to Redmine
-    output_list = [
-        {
-            'path': os.path.join(work_dir, pdf_file),
-            'filename': os.path.basename(pdf_file)
-        }
-    ]
-
-    redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=4,
-                                  notes='Generated ROGA successfully. Completed PDF report is attached.')
+        redmine_instance.issue.update(resource_id=issue.id, uploads=output_list, status_id=4,
+                                      notes='Generated ROGA successfully. Completed PDF report is attached.')
 
 
 def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, amended_id):
@@ -230,9 +238,16 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
     gdcs_reports = extract_report_data.get_gdcs(seq_list)
     gdcs_dict = extract_report_data.generate_gdcs_dict(gdcs_reports)
 
+    # Create our idiot proofing list. There are a bunch of things that can go wrong that should make us not send
+    # out reports. As we go through data retrieval/report generation, add things that are wrong to the list, and users
+    # will get a message saying what's wrong, no report will be generated unless user adds the FORCE flag.
+    idiot_proofing_list = list()
     # DATE SETUP
     date = datetime.today().strftime('%Y-%m-%d')
     year = datetime.today().strftime('%Y')
+    # Follow our fiscal year - anything before April is actually previous year.
+    if datetime.now().month < 4:
+        year = int(year) - 1
 
     # PAGE SETUP
     geometry_options = {"tmargin": "2cm",
@@ -281,9 +296,11 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
 
             if not ecoli_uida_present:
                 print('WARNING: uidA not present for {}. Cannot confirm E. coli.'.format(key))
+                idiot_proofing_list.append('uidA not present in {}. Cannot confirm E. coli'.format(key))
             if not ecoli_vt_present:
                 print('WARNING: vt probe sequences not detected for {}. '
                       'Cannot confirm strain is verotoxigenic.'.format(key))
+                idiot_proofing_list.append('VTX not present in {}. Cannot confirm strain is verotoxigenic'.format(key))
 
         if False not in uida_list:
             all_uida = True
@@ -298,6 +315,8 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
         mono_list = []
         for key, value in validated_listeria_dict.items():
             mono_list.append(value)
+            if value is False:
+                idiot_proofing_list.append('Could not confirm {} as L. monocytogenes'.format(key))
         if False not in mono_list:
             all_mono = True
 
@@ -306,6 +325,8 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
         enterica_list = []
         for key, value in validated_salmonella_dict.items():
             enterica_list.append(value)
+            if value is False:
+                idiot_proofing_list.append('Could not confirm {} as S. enterica'.format(key))
         if False not in enterica_list:
             all_enterica = True
 
@@ -314,6 +335,8 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
         vibrio_list = list()
         for key, value in validated_vibrio_dict.items():
             vibrio_list.append(value)
+            if value is False:
+                idiot_proofing_list.append('Could not confirm {} as Vibrio'.format(key))
         if False not in vibrio_list:
             all_vibrio = True
 
@@ -393,7 +416,7 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
 
             if genus == 'Escherichia':
                 if all_uida:
-                    summary.append('All strains are confirmed as ')
+                    summary.append('The following strains are confirmed as ')
                     summary.append(italic('Escherichia coli '))
                     summary.append('based on 16S sequence and the presence of marker gene ')
                     summary.append(italic('uidA. '))
@@ -496,6 +519,7 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
                                        bold(pl.NoEscape(r'uidA{\footnotesize \textsuperscript {a}}')),
                                        bold(pl.NoEscape(r'Serotype')),
                                        bold(pl.NoEscape(r'Verotoxin Profile')),
+                                       # bold(pl.NoEscape(r'Verotoxin')),
                                        bold(pl.NoEscape(r'hlyA{\footnotesize \textsuperscript {a}}')),
                                        bold(pl.NoEscape(r'eae{\footnotesize \textsuperscript {a}}')),
                                        bold(pl.NoEscape(r'aggR{\footnotesize \textsuperscript {a}}')),
@@ -790,6 +814,7 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
                         passfail = 'Pass'
                     elif passfail == '-':
                         passfail = 'Fail'
+                        idiot_proofing_list.append('{} failed GDCS validation'.format(sample_id))
 
                     # Add row
                     table.add_row((lsts_id, total_length, average_coverage_depth, matches, passfail))
@@ -845,10 +870,10 @@ def generate_roga(seq_lsts_dict, genus, lab, source, work_dir, amendment_flag, a
         pass
 
     pdf_file += '.pdf'
-    return pdf_file
+    return pdf_file, idiot_proofing_list
 
 
-def parse_seqid_list(description):
+def parse_seqid_list(description, starting_row=3):
     seqids = list()
     lstsids = list()
 
@@ -856,7 +881,7 @@ def parse_seqid_list(description):
     description = [x.replace(' ', '') for x in description]
 
     try:
-        for item in description[3:]:
+        for item in description[starting_row:]:
             seqid_item = None
             lstsid_item = None
 
@@ -902,10 +927,8 @@ def produce_header_footer():
     # Footer
     with header.create(pl.Foot("C")):
         with header.create(pl.Tabular('lcr')) as table:
-            table.add_row('', bold('Not valid for official use - this is a DEVELOPMENT'
-                                   ' version of the AutoROGA report.'), '')
             table.add_row('', bold('Data interpretation guidelines can be found in RDIMS document ID: 10401305'), '')
-            table.add_row('', bold('This report was generated with OLC AutoROGA v1.1'), '')
+            table.add_row('', bold('This report was generated with OLC AutoROGA v1.2'), '')
     return header
 
 
