@@ -47,7 +47,7 @@ def confindr_redmine(redmine_instance, issue, work_dir, description):
     confindr_db = '/mnt/nas2/databases/confindr/databases/'
 
     # Prepare command
-    cmd = '{confindr_py} ' \
+    cmd = '{confindr_py} --rmlst ' \
           '-i {raw_reads_folder} ' \
           '-o {output_folder} ' \
           '-d {confindr_db}'.format(confindr_py=confindr_py,
