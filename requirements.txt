@@ -16,7 +16,7 @@ git-pull-request==2.4.0
 idna==2.7
 interop==1.1.4
 ipykernel==4.8.2
-ipython==6.3.1
+ipython==7.16.3
 ipython-genutils==0.2.0
 jedi==0.11.1
 jupyter-client==5.2.3
