@@ -74,7 +74,7 @@ def geneseekr_redmine(redmine_instance, issue, work_dir, description):
 
         # These unfortunate hard coded paths appear to be necessary
         activate = 'source /home/ubuntu/miniconda3/bin/activate /mnt/nas2/virtual_environments/sequence_extractor'
-        py = '/mnt/nas2/virtual_environments/sequence_extractor/lib/python3.9/genemethods/SequenceExtractor/src/sequenceExtractor.py'
+        py = '/mnt/nas2/virtual_environments/sequence_extractor/lib/python3.9/site-packages/genemethods/SequenceExtractor/src/sequenceExtractor.py'
         # Run the command the necessary arguments
         cmd = 'python {py} -s {seqpath} -f {fasta_details}'\
             .format(py=py,
